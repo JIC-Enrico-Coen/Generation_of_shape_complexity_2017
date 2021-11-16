@@ -1,0 +1,55 @@
+
+% In this section you may modify the mesh in any way whatsoever.
+m=leaf_plotoptions(m,'layeroffset', 0.2);    % set colour of polariser gradient arrows
+m=leaf_plotoptions(m,'highgradcolor',[0,0,0],'lowgradcolor',[0,0,0]);
+m=leaf_plotoptions(m,'decorscale',1.5);
+m=leaf_plotoptions(m,'arrowthickness',1.3);
+m=leaf_plotoptions(m,'sidegrad','AB'); %polariser gradient will be plotted on both sides
+
+if (Steps(m)==0) && m.globalDynamicProps.doinit % First iteration
+    
+    % Set up names for variant models.  Useful for running multiple models on a cluster.
+    
+    m.userdata.ranges.modelname.range {1} = 'Figure 1G, H. Areal conflict'; %Figure 1 G,H
+    m.userdata.ranges.modelname.range {2} = 'dome1.1_areal conflict and contraction';
+    m.userdata.ranges.modelname.range {3} = 'Figure 1E, F.  Surface conflict'; %Figure 1 E,F
+    m.userdata.ranges.modelname.range {4} = 'dome2.1_surface conflict and contraction';
+    m.userdata.ranges.modelname.range {5} = 'Figure 1C, D. Uniform anisotropic growth';
+    m.userdata.ranges.modelname.range {6} = 'Figure 1I, J. Convergent directional conflict';
+    m.userdata.ranges.modelname.range {7} = 'dome3.1_anisotropic conflict with polarity convergence and contraction';
+    m.userdata.ranges.modelname.range {8} = 'Figure 6F, G. Orthogonal directional conflict'; %Figure 6 F,G
+    m.userdata.ranges.modelname.range {9} = 'dome3.3_anisotropic conflict with polarity convergence + criss';
+    m.userdata.ranges.modelname.range {10} = 'Figure 6H, I.  T-shaped directional conflict'; %Figure 6 H,I
+    m.userdata.ranges.modelname.range {11} = 'dome3.5_anisotropic conflict with polarity convergence + L criss-cross';
+    m.userdata.ranges.modelname.range {12} = 'dome3.6_anisotropic conflict with polarity convergence + one arm';
+    m.userdata.ranges.modelname.range {13} = 'dome4_anisotropic conflict with proximodistal polarity + criss-cross';
+    m.userdata.ranges.modelname.range {14} = 'dome4.1_areal conflict and criss-cross_no polariser';
+    m.userdata.ranges.modelname.range {15} = 'dome4.2_anisotropic conflict with proximodistal polarity + criss-cross contraction';
+    m.userdata.ranges.modelname.range {16} = 'dome5_anisotropic conflict with channel confluence polarity + criss-cross';
+    m.userdata.ranges.modelname.range {17} = 'dome6_orthogonal conflict + areal conflict';
+    m.userdata.ranges.modelname.range {18} = 'dome7_surface conflict + areal conflict';
+    m.userdata.ranges.modelname.range {19} = 'dome8_surface conflict + orthogonal conflict';
+    m.userdata.ranges.modelname.range {20} = 'Figure 1A, B. Uniform isotropic growth'; 
+    m.userdata.ranges.modelname.range {21} = 'Figure 1 Sup 1 A, B. Areal conflict flat start'; 
+    m.userdata.ranges.modelname.range {22} = 'Figure 1 Sup 1 C, D. Convergent directional conflict flat start'; 
+    m.userdata.ranges.modelname.index =10;                      
+    
+    m = leaf_bowlz(m, 0.01 ); %induce a slightly curve in the medio-lateral axis of the canvas
+    m = leaf_setthickness(m, 0.06); %thickness of canvas, relates to the 60 um of the real data
+    
+    % set colour of polariser gradient arrows
+    m=leaf_plotoptions(m,'highgradcolor',[0,0,0],'lowgradcolor',[0,0,0]);
+    m=leaf_plotoptions(m,'decorscale',1.5);
+    m=leaf_plotoptions(m,'arrowthickness',1.5);
+    
+    m.globalProps.timestep=1; %each step relates to 10 hours in real time
+    
+end
+modelname = m.userdata.ranges.modelname.range{m.userdata.ranges.modelname.index};  % CLUSTER
+disp(sprintf('model2',mfilename, modelname));
+switch modelname
+    case {'MODEL1','MODEL2'}
+        
+    otherwise
+        % If you reach here, you probably forgot a case.
+end

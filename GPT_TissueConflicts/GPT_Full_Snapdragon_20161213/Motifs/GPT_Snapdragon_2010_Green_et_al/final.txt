@@ -1,0 +1,17 @@
+
+    % force FE to subdivide here
+    % sometimes it is convenient to switch of subdivision
+    % until regionalisation is complete
+    if  m.userdata.all_regions_ready
+        % but in any case only do it when the particular region
+        % is ready and has not already been subdivided
+        if max(id_lip_p)>=0.75 %&& ~isfield(m.userdata,'donesubdivision2')
+            m = leaf_subdivide( m, 'morphogen','id_lip',...
+                'min',0.5,'max',1,...
+                'mode','mid','levels','all');
+        end
+
+        % one shot subdivision
+        m.userdata.all_regions_ready=false;
+        m.userdata.donesubdivisions=true;
+    end

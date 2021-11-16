@@ -1,0 +1,174 @@
+
+    % Summary of the interaction function
+    %
+    % At input structure m represents the state of the model At t1
+    % At output m has been updated to the desired state at t2=t1+dt
+    %
+    % It is called once for every timestep, dt.
+    %
+    % m has fields associated with factors, such as morphogens.
+    % These are extracted from m, modified, and  re-inserted into m.
+    % GFtbox then
+    %     a) Relaxes the finite elements model and, in this case
+    %        sets residual strains to zero
+    %        RICHARD - perhaps some detail - Mention Matlab solver etc.
+    %        max_error, etc.
+    %     b) Simultaneously evaluates reactions and
+    %        relaxes the diffusion system. It uses the same
+    %        mesh as the finite elements model.
+    %        RICHARD - perhaps some detail - Matlab solver etc.
+    %     c) Distorts (grows) the 'cell clones' to reflect the
+    %        changes in finite elements model geometry
+    % to produce the state of the model At t2.
+    %
+    % For example,
+    %
+    % [id_cyc_i,id_cyc_p,id_cyc_a,id_cyc_l] = getMgenLevels( m, 'ID_CYC' );
+    % where
+    % id_cyc_i, scalar that indexes the CYC morphogen
+    % id_cyc_a, scalar where id_cyc_l=id_cyc_p * id_cyc_a
+    % id_cyc_p, vector (one element per mesh vertex)
+    % id_cyc_l, vector representing levels of CYC factor at each vertex
+    %
+    % Note: the dot star ( .* ) operator is an element by element multiply
+    %
+    % The interaction function uses three further functions,
+    % listed at the end of this file, pro(), inh(), TimedMult()
+
+    % the following command prevents shearing between the two
+    % sides of the mesh
+    m = leaf_setproperty( m, 'rectifyverticals', 1 );
+
+    % set colour of polariser gradient arrows
+    m=leaf_plotoptions(m,'highgradcolor',[0,0,0],'lowgradcolor',[0,0,0]);
+    m=leaf_plotoptions(m,'decorscale',1.5);
+    m=leaf_plotoptions(m,'arrowthickness',1.3);
+
+    if m.globalDynamicProps.currentIter==0 % the first iteration
+        % set up control of mesh thickness (override GUI)
+        % zero monitoring variables
+        m.userdata.areas = [];
+        m.userdata.times = [];
+        % clear the ranges fields and start again
+        m.userdata=rmfield(m.userdata,'ranges');
+        % Add the range fields
+        % The following range of mutants were used in Cui et al 2010
+        % in conjunction with the modelnumber range 'WILD'
+        m.userdata.ranges.mutantnumber.range(1)=0; % mutantnumber 0 is default
+        m.userdata.ranges.mutantnumber.range(2)=1; % mutantnumber 1 no production of polariser from prox (still has background)
+        m.userdata.ranges.mutantnumber.range(3)=2; % mutantnumber 2 constituative cenorg
+        m.userdata.ranges.mutantnumber.range(4)=3; % mutantnumber 3, dich no longer influence distorg
+        m.userdata.ranges.mutantnumber.range(5)=4; % mutantnumber 4, 35S RAD (constitutive rad)
+        m.userdata.ranges.mutantnumber.range(6)=5; % mutantnumber 5, backpetals constitutive cyc
+        m.userdata.ranges.mutantnumber.range(7)=6; % mutantnumber 6, constitutive cyc constitutive rad
+        m.userdata.ranges.mutantnumber.index=1; % default index selects just one of these modulation function options,
+
+        % The following range of submodels were used in Green et al 2010
+        m.userdata.ranges.modelnumber.range{1}='Fig 4G Model 1'; % Ground state: triple mutant (cyc, dich, div)
+        m.userdata.ranges.modelnumber.range{2}='Fig 4J Model 1'; % Mutant 1  Ground state with no polariser
+        m.userdata.ranges.modelnumber.range{3}='Fig 4K Model 1'; % Mutant 2. Ground state without growth inhibited in the medial lobe
+        m.userdata.ranges.modelnumber.range{4}='Fig 5F Model 2'; % Double mutant (cyc, dich)
+        m.userdata.ranges.modelnumber.range{5}='Fig 6G Model 3'; % First model of wild type
+        m.userdata.ranges.modelnumber.range{6}='Fig 7B Model 4'; % one attempt to sort out clonal pattens in 'Fig 6G Model 3'
+        m.userdata.ranges.modelnumber.range{7}='Fig 7I Model 5'; % second attempt. Introduction of a central organiser
+        m.userdata.ranges.modelnumber.range{8}='Fig 8C Model 6'; % Wild type with improved shape
+        m.userdata.ranges.modelnumber.range{9}='Fig 9B Model 7'; % Main Snapdragon model, Wild type with DICH influencing DISTORG
+        m.userdata.ranges.modelnumber.range{10}='Fig 9B Model 7M1'; % mutant of 'Fig 9B Model 7'
+        m.userdata.ranges.modelnumber.range{11}='Fig 9B Model 7M2'; % mutant of 'Fig 9B Model 7'
+        m.userdata.ranges.modelnumber.range{12}='Fig 9B Model 7M3'; % mutant of 'Fig 9B Model 7'
+        m.userdata.ranges.modelnumber.range{13}='Fig 9JK Model 8'; % CENORG slightly active in ground state
+        m.userdata.ranges.modelnumber.range{14}='WILD'; % used with the mutantnumbers above for Cui et al 2010
+        
+        %****************************** CHANGE THIS INDEX ******************************
+        m.userdata.ranges.modelnumber.index=7; % selects one of these submodels, 
+        % change, save, Restart and Stages: Recompute stages
+        %****************************** CHANGE THIS INDEX ******************************
+        
+        
+        modelnumber=m.userdata.ranges.modelnumber.range{m.userdata.ranges.modelnumber.index};
+        if strcmpi(modelnumber,'WILD') % this is here to hide it from the cluster control system
+            m=leaf_mgen_modulate(m,'morphogen', 'ID_CYC','mutant',        1);
+            m=leaf_mgen_modulate(m,'morphogen', 'ID_DICH','mutant',       1);
+            m=leaf_mgen_modulate(m,'morphogen', 'ID_DIV','mutant',        1);
+            m=leaf_mgen_modulate(m,'morphogen', 'ID_CENORG','mutant',     1);
+            m=leaf_mgen_modulate(m,'morphogen', 'V_DICHDISTORG','mutant',1);
+        end
+    end
+    m.globalProps.timestep=2.5; %FORCE dt (overriding GUI) since it is so easy to forget
+    m = leaf_mgen_plotpriority( m, {'id_cenorg','v_cenorgp','v_cenorgn','id_distorg','id_proxorg'}, [10], [0.19 0.19 0.19 0.5 0.6] );
+    modelnumber=m.userdata.ranges.modelnumber.range{m.userdata.ranges.modelnumber.index};
+
+    disp(sprintf('/n>---------------- modelnumber=%s -----------------</n',modelnumber))
+    mutantnumber=m.userdata.ranges.mutantnumber.range(m.userdata.ranges.mutantnumber.index);
+    disp(sprintf('>>>mutantnumber=%d',mutantnumber));
+
+    m = leaf_allowmutant( m, true );
+    switch (modelnumber) % setup the default morphogen activities (0 means zero activity, i.e. mutant)
+        case {'Fig 4G Model 1' , 'Fig 4J Model 1', 'Fig 4K Model 1'}
+            m=leaf_mgen_modulate(m,'morphogen', 'ID_CYC','mutant',        0);
+            m=leaf_mgen_modulate(m,'morphogen', 'ID_DICH','mutant',       0);
+            m=leaf_mgen_modulate(m,'morphogen', 'ID_DIV','mutant',        0);
+            m=leaf_mgen_modulate(m,'morphogen', 'ID_CENORG','mutant',     1);
+            m=leaf_mgen_modulate(m,'morphogen', 'V_DICHDISTORG','mutant',1);
+        case 'Fig 5F Model 2'
+            m=leaf_mgen_modulate(m,'morphogen', 'ID_CYC','mutant',        0);
+            m=leaf_mgen_modulate(m,'morphogen', 'ID_DICH','mutant',       0);
+            m=leaf_mgen_modulate(m,'morphogen', 'ID_DIV','mutant',        1);
+            m=leaf_mgen_modulate(m,'morphogen', 'ID_CENORG','mutant',     1);
+            m=leaf_mgen_modulate(m,'morphogen', 'V_DICHDISTORG','mutant',1);
+        case {'Fig 6G Model 3','Fig 7B Model 4'}
+            m=leaf_mgen_modulate(m,'morphogen', 'ID_CYC','mutant',        1);
+            m=leaf_mgen_modulate(m,'morphogen', 'ID_DICH','mutant',       1);
+            m=leaf_mgen_modulate(m,'morphogen', 'ID_DIV','mutant',        1);
+            m=leaf_mgen_modulate(m,'morphogen', 'ID_CENORG','mutant',     1);
+            m=leaf_mgen_modulate(m,'morphogen', 'V_DICHDISTORG','mutant',1);
+        case {'Fig 7I Model 5','Fig 7I Model 5M1'}
+            m=leaf_mgen_modulate(m,'morphogen', 'ID_CYC','mutant',        1);
+            m=leaf_mgen_modulate(m,'morphogen', 'ID_DICH','mutant',       1);
+            m=leaf_mgen_modulate(m,'morphogen', 'ID_DIV','mutant',        1);
+            m=leaf_mgen_modulate(m,'morphogen', 'ID_CENORG','mutant',     1);
+            m=leaf_mgen_modulate(m,'morphogen', 'V_DICHDISTORG','mutant',1);
+        case {'Fig 8C Model 6'} % used to be dich effect on distorg NOW add all the twiddles
+            m=leaf_mgen_modulate(m,'morphogen', 'ID_CYC','mutant',        1);
+            m=leaf_mgen_modulate(m,'morphogen', 'ID_DICH','mutant',       1);
+            m=leaf_mgen_modulate(m,'morphogen', 'ID_DIV','mutant',        1);
+            m=leaf_mgen_modulate(m,'morphogen', 'ID_CENORG','mutant',     1);
+            m=leaf_mgen_modulate(m,'morphogen', 'V_DICHDISTORG','mutant',1);
+        case {'Fig 9B Model 7'} % we now add dich effect on distorg
+            m=leaf_mgen_modulate(m,'morphogen', 'ID_CYC','mutant',        1);
+            m=leaf_mgen_modulate(m,'morphogen', 'ID_DICH','mutant',       1);
+            m=leaf_mgen_modulate(m,'morphogen', 'ID_DIV','mutant',        1);
+            m=leaf_mgen_modulate(m,'morphogen', 'ID_CENORG','mutant',     1);
+            m=leaf_mgen_modulate(m,'morphogen', 'V_DICHDISTORG','mutant',1);
+        case {'Fig 9B Model 7M1'}% and now illustrate +organiser instead of -organiser
+            m=leaf_mgen_modulate(m,'morphogen', 'ID_CYC','mutant',        1);
+            m=leaf_mgen_modulate(m,'morphogen', 'ID_DICH','mutant',       1);
+            m=leaf_mgen_modulate(m,'morphogen', 'ID_DIV','mutant',        1);
+            m=leaf_mgen_modulate(m,'morphogen', 'ID_CENORG','mutant',     1);
+            m=leaf_mgen_modulate(m,'morphogen', 'V_DICHDISTORG','mutant',1);
+        case {'Fig 9B Model 7M2'}% triple mutant
+            m=leaf_mgen_modulate(m,'morphogen', 'ID_CYC','mutant',        0);
+            m=leaf_mgen_modulate(m,'morphogen', 'ID_DICH','mutant',       0);
+            m=leaf_mgen_modulate(m,'morphogen', 'ID_DIV','mutant',        0);
+            m=leaf_mgen_modulate(m,'morphogen', 'ID_CENORG','mutant',     1);
+            m=leaf_mgen_modulate(m,'morphogen', 'V_DICHDISTORG','mutant',1);
+        case {'Fig 9JK Model 8'}% triple mutant
+            m=leaf_mgen_modulate(m,'morphogen', 'ID_CYC','mutant',        0); % to reproduce Figure
+            m=leaf_mgen_modulate(m,'morphogen', 'ID_DICH','mutant',       0);
+            m=leaf_mgen_modulate(m,'morphogen', 'ID_DIV','mutant',        0);
+            m=leaf_mgen_modulate(m,'morphogen', 'ID_CENORG','mutant',     1);
+            m=leaf_mgen_modulate(m,'morphogen', 'V_DICHDISTORG','mutant',1);
+%             m=leaf_mgen_modulate(m,'morphogen', 'ID_CYC','mutant',        1);
+%             m=leaf_mgen_modulate(m,'morphogen', 'ID_DICH','mutant',       1);
+%             m=leaf_mgen_modulate(m,'morphogen', 'ID_DIV','mutant',        1);
+%             m=leaf_mgen_modulate(m,'morphogen', 'ID_CENORG','mutant',     1);
+%             m=leaf_mgen_modulate(m,'morphogen', 'V_DICHDISTORG','mutant',1);
+        case {'Fig 9B Model 7M3'}% double mutant
+            m=leaf_mgen_modulate(m,'morphogen', 'ID_CYC','mutant',        0);
+            m=leaf_mgen_modulate(m,'morphogen', 'ID_DICH','mutant',       0);
+            m=leaf_mgen_modulate(m,'morphogen', 'ID_DIV','mutant',        1);
+            m=leaf_mgen_modulate(m,'morphogen', 'ID_CENORG','mutant',     1);
+            m=leaf_mgen_modulate(m,'morphogen', 'V_DICHDISTORG','mutant',1);
+        otherwise
+            error('Selecting modelnumber')
+    end

@@ -1,0 +1,68 @@
+% Here you may add any functions of your own, that you want to call from
+% the interaction function, but never need to call from outside it.
+% Whichever section they are called from, they must respect the same
+% restrictions on what modifications they are allowed to make to the mesh.
+% This comment can be deleted.
+function m=leaf_set_seams(m,f_seam_p)
+seamnodes=find(f_seam_p>0.5);
+% use m.edgeends, m.seams, m.nodes
+% find nodes to be included in seams
+% find edges joining the nodes
+jn=[];
+for i=1:length(m.edgeends)
+    ind=intersect(seamnodes,m.edgeends(i,:));
+    if length(ind)==2
+        jn(end+1)=i;
+    end
+end
+% set all seams
+m.seams=false(size(m.edgeends,1),1);
+m.seams(jn)=true;
+end
+
+function [m,f_seam_p,f_seam2_p]=remove_lip_seams(m,id_lip_p,id_lat_p,f_seam_p,f_seam2_p)
+%function m=remove_lip_seams(m,id_lip_p,id_lat_p,f_seam_p)
+%
+% add the following 3 lines to the interaction function and
+% this function to the end of the interaction function
+%
+%     if (570>realtime-dt) && (570<realtime+dt)
+%         m=remove_lip_seams(m,id_lip_p,id_lat_p,f_seam_p);
+%     end
+ind=find(id_lip_p>0 & f_seam_p>0); %7);
+f_seam2_p(ind)=1; % keep this seam for later
+ind=find(id_lip_p>0 & id_lat_p<0.4); %7);
+f_seam_p(ind)=0; %%%%%%%%%%%%%% REMOVE %%%%%%%%%%%%%
+seamnodes=find(f_seam_p>0.5);
+% find edges joining the nodes
+jn=[];
+for i=1:length(m.edgeends)
+    ind=intersect(seamnodes,m.edgeends(i,:));
+    if length(ind)==2
+        jn(end+1)=i;
+    end
+end
+% set seams
+m.seams=false(size(m.edgeends,1),1);
+m.seams(jn)=true;
+end
+function [m,f_seam2_p]=remove_lip_seams2(m,f_seam2_p)
+%
+%     if (570>realtime-dt) && (570<realtime+dt)
+%         m=remove_lip_seams2(m,f_seam2_p);
+%     end
+seamnodes=find(f_seam2_p>0.5);
+% find edges joining the nodes
+jn=[];
+for i=1:length(m.edgeends)
+    ind=intersect(seamnodes,m.edgeends(i,:));
+    if length(ind)==2
+        jn(end+1)=i;
+    end
+end
+% set seams
+m.seams=false(size(m.edgeends,1),1);
+m.seams(jn)=true;
+end
+
+

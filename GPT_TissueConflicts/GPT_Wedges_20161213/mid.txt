@@ -1,0 +1,1023 @@
+% In this section you may modify the mesh in any way that does not
+% alter the set of nodes.
+
+%             %ID_SUBDIVISION - Region that subdivides
+%             id_subdivision_p (m.nodes(:,2) < 0.0391 & m.nodes(:,2) > - 0.0151) = 1
+
+%   m = leaf_fix_vertex( m, 'ID_EDGE', 'dfs', 'z' );
+
+
+if (Steps(m)==1) && m.globalDynamicProps.doinit  % Initialisation code.
+    
+    m = leaf_setproperty (m, ...
+        'twosidedpolarisation', true, ... % the mesh has two-sided polarisation
+        'mingradient', 0.0, ... % No threshold for freezing the polariser
+        'usedpolfreezebc', true); % a rather subtle choice of a feature of the behaviour of frozen gradients. It probably doesn't make much difference.
+    
+    m = leaf_setpolfrozen (m, false); %Initially the gradient is not frozen anywhere
+    
+    switch modelname
+        
+        case {'Figure 10I. No directional conflict', 'Figure 9I. No directional conflict and specified anisotropy'}
+            
+            m = leaf_mgen_conductivity( m, 'POLARISER', 0 );  %specifies the diffusion rate of polariser
+            m = leaf_mgen_absorption( m, 'POLARISER', 0 );     % specifies degradation rate of polariser
+%             bottom = m.nodes(:,2) == min(m.nodes(:,2));
+%             top = m.nodes(:,2)== max(m.nodes(:,2));
+%             id_sink_p(top) = 1;
+%             id_source_p(bottom) = 1;
+%             P(bottom) = 1;
+%             P(top) = 0.5;
+%             m.morphogenclamp(bottom, polariser_i) = 1;
+%             m.morphogenclamp(top, polariser_i) = 1;
+            
+            %Dorso-Ventral Regional factors (IDs) and Signals (Ss)
+            
+            %ID_DIV
+            id_div_p (:) = 1;
+            
+            %S_DIV
+            s_div_p(:) = 0;
+            s_div_p(:) = id_div_p(:);
+            m = leaf_mgen_conductivity( m, 'S_DIV', 0.0005 );
+            m = leaf_mgen_absorption( m, 'S_DIV', 0.005 );
+            
+            %ID_RAD
+            id_rad_p (m.nodes(:,1) < - 0.51 | m.nodes(:,1) > 0.51) = 1;
+            
+            %S_RAD
+            s_rad_p(:) = 0;
+            s_rad_p(:) = 2*id_rad_p(:);
+            m = leaf_mgen_conductivity( m, 'S_RAD', 0.0001 );
+            m = leaf_mgen_absorption( m, 'S_RAD', 0.01 );
+            
+            %ID_HINGE
+            id_hinge_p (m.nodes(:,1) < - 0.35 | m.nodes(:,1) > 0.35) = 1;
+            
+            %Proximo-distal Regional factors (IDs) and Signals (Ss)
+            
+            %ID_RIM
+            id_rim_p (:) = 0;
+            id_rim_p(m.nodes(:,2) < 0.01 & m.nodes(:,2) > - 0.01) = 1;
+            
+            %S_RIM
+            s_rim_p(:) = 0;
+            s_rim_p(:) = id_rim_p;
+            m = leaf_mgen_conductivity( m, 'S_RIM', 0.000001 );
+            m = leaf_mgen_absorption( m, 'S_RIM', 0.01);
+            
+            %ID_LIP
+            id_lip_p (:) = 0;
+            id_lip_p (m.nodes(:,2)  > 0.0099) = 1;
+            
+            %ID_LIPDISTAL
+            id_lipdistal_p (:) = 0;
+            id_lipdistal_p(m.nodes(:,2)  > 0.03) = 1;
+            
+            %ID_LIPCLIFF
+            id_lipcliff_p (:) = 0;
+            id_lipcliff_p (m.nodes(:,2) < 0.03 & m.nodes(:,2) > 0.0099) = 1;
+            
+            %PALATE
+            id_palate_p (:) = 0;
+            id_palate_p (m.nodes(:,2) < - 0.01) = 1;
+            
+            %PALATE DISTAL
+            id_palatedi_p (:) = 0;
+            id_palatedi_p (m.nodes(:,2) < - 0.01 & m.nodes(:,2) > - 0.03) = 1;
+            
+            %PALATE PROX
+            id_palateprox_p (:) = 0;
+            id_palateprox_p (m.nodes(:,2) < - 0.03) = 1;
+            
+            %Medio-Lateral Regional factors (IDs) and Signals (Ss)
+            
+            %id_lat
+            id_lat_p((m.nodes(:,1) < 0.180 & m.nodes(:,1) > 0.162)) = 1;
+            id_lat_p((m.nodes(:,1) > - 0.180 & m.nodes(:,1) < - 0.162) ) = 1;
+            id_lat_p((m.nodes(:,1) > 0.51 | m.nodes(:,1) < - 0.51) ) = 1;
+            
+            %s_lat
+            s_lat_p = 3*id_lat_p .* inh (0.65, id_rad_p);
+            m = leaf_mgen_conductivity( m, 's_LAT', 0.00002 );
+            m = leaf_mgen_absorption( m, 's_LAT', 0.0002 );
+            
+            %ID_MED
+            id_med_p (m.nodes(:,1) > 0.335 & m.nodes(:,1) < 0.35) = 1;
+            id_med_p (m.nodes(:,1) < - 0.335 & m.nodes(:,1) > - 0.35) = 1;
+            id_med_p (m.nodes(:,1) > - 0.008 & m.nodes(:,1) < 0.008) = 1;
+            
+            %S_MED
+            s_med_p(:) = 0;
+            s_med_p(:) = 5*id_med_p(:);
+            m = leaf_mgen_conductivity( m, 'S_MED', 0.00002 );
+            m = leaf_mgen_absorption( m, 'S_MED', 0.0002 );
+            
+            %ID_secvein
+            id_secvein_p (m.nodes(:,1) > 0.241 & m.nodes(:,1) < 0.252) = 1;
+            id_secvein_p (m.nodes(:,1) < - 0.241 & m.nodes(:,1) > - 0.252) = 1;
+            id_secvein_p (m.nodes(:,1) > 0.431 & m.nodes(:,1) < 0.447) = 1;
+            id_secvein_p (m.nodes(:,1) < - 0.431 & m.nodes(:,1) > - 0.447) = 1;
+            id_secvein_p (m.nodes(:,1) > 0.085 & m.nodes(:,1) < 0.097) = 1;
+            id_secvein_p (m.nodes(:,1) < - 0.085 & m.nodes(:,1) > - 0.097) = 1;
+            
+            %S_secvein
+            s_secvein_p(:) = 0;
+            s_secvein_p(:) = 5*id_secvein_p(:);
+            m = leaf_mgen_conductivity( m, 'S_SECVEIN', 0.00001 );
+            m = leaf_mgen_absorption( m, 'S_SECVEIN', 0.01 );
+            
+            %Other factors
+            
+            %S_SOURCE
+            s_source_p(:) = 0;
+            s_source_p(:) = 5*id_source_p;
+            m = leaf_mgen_conductivity( m, 'S_SOURCE', 0.00002 );
+            m = leaf_mgen_absorption( m, 'S_SOURCE', 0.0002 );
+            
+            %S_SINK
+            s_sink_p(:) = 0;
+            s_sink_p(:) = 5*id_sink_p;
+            m = leaf_mgen_conductivity( m, 'S_SINK', 0.000005 );
+            m = leaf_mgen_absorption( m, 'S_SINK', 0.00005 );
+            
+            case { 'Figure 9J. No orthogonal conflict', 'Figure 9 A-F. Phase I + II of div domes','Figure 9G. No surface conflict',...
+                    'Figure 9H. No areal conflict', 'WT_criss-cross', 'Figure 10A-F.   Phase I + II of wild-type wedge',...
+                    'WT_criss-cross + sinus_A+B', 'Figure 10J. No orthogonal directional conflict', 'WT_criss-cross + sinus_B_no surface conflict',...
+                     'Figure 10H. No areal conflict', 'WT_timing all at day 10'}
+            
+            m = leaf_mgen_conductivity( m, 'POLARISER', 0.0001 );  %specifies the diffusion rate of polariser
+            m = leaf_mgen_absorption( m, 'POLARISER', 0.001 );     % specifies degradation rate of polariser
+            bottom = m.nodes(:,2) == min(m.nodes(:,2));
+            top = m.nodes(:,2)== max(m.nodes(:,2));
+            id_sink_p(top) = 1;
+            id_source_p(bottom) = 1;
+            P(bottom) = 1;
+            P(top) = 0.5;
+            m.morphogenclamp(bottom, polariser_i) = 1;
+            m.morphogenclamp(top, polariser_i) = 1;
+            
+            %Dorso-Ventral Regional factors (IDs) and Signals (Ss)
+            
+            %ID_DIV
+            id_div_p (:) = 1;
+            
+            %S_DIV
+            s_div_p(:) = 0;
+            s_div_p(:) = id_div_p(:);
+            m = leaf_mgen_conductivity( m, 'S_DIV', 0.0005 );
+            m = leaf_mgen_absorption( m, 'S_DIV', 0.005 );
+            
+            %ID_RAD
+            id_rad_p (m.nodes(:,1) < - 0.51 | m.nodes(:,1) > 0.51) = 1;
+            
+            %S_RAD
+            s_rad_p(:) = 0;
+            s_rad_p(:) = 2*id_rad_p(:);
+            m = leaf_mgen_conductivity( m, 'S_RAD', 0.0001 );
+            m = leaf_mgen_absorption( m, 'S_RAD', 0.01 );
+            
+            %ID_HINGE
+            id_hinge_p (m.nodes(:,1) < - 0.35 | m.nodes(:,1) > 0.35) = 1;
+            
+            %Proximo-distal Regional factors (IDs) and Signals (Ss)
+            
+            %ID_RIM
+            id_rim_p (:) = 0;
+            id_rim_p(m.nodes(:,2) < 0.01 & m.nodes(:,2) > - 0.01) = 1;
+            
+            %S_RIM
+            s_rim_p(:) = 0;
+            s_rim_p(:) = id_rim_p;
+            m = leaf_mgen_conductivity( m, 'S_RIM', 0.000001 );
+            m = leaf_mgen_absorption( m, 'S_RIM', 0.01);
+            
+            %ID_LIP
+            id_lip_p (:) = 0;
+            id_lip_p (m.nodes(:,2)  > 0.0099) = 1;
+            
+            %ID_LIPDISTAL
+            id_lipdistal_p (:) = 0;
+            id_lipdistal_p(m.nodes(:,2)  > 0.03) = 1;
+            
+            %ID_LIPCLIFF
+            id_lipcliff_p (:) = 0;
+            id_lipcliff_p (m.nodes(:,2) < 0.03 & m.nodes(:,2) > 0.0099) = 1;
+            
+            %PALATE
+            id_palate_p (:) = 0;
+            id_palate_p (m.nodes(:,2) < - 0.01) = 1;
+            
+            %PALATE DISTAL
+            id_palatedi_p (:) = 0;
+            id_palatedi_p (m.nodes(:,2) < - 0.01 & m.nodes(:,2) > - 0.03) = 1;
+            
+            %PALATE PROX
+            id_palateprox_p (:) = 0;
+            id_palateprox_p (m.nodes(:,2) < - 0.03) = 1;
+            
+            %Medio-Lateral Regional factors (IDs) and Signals (Ss)
+            
+            %id_lat
+            id_lat_p((m.nodes(:,1) < 0.180 & m.nodes(:,1) > 0.162)) = 1;
+            id_lat_p((m.nodes(:,1) > - 0.180 & m.nodes(:,1) < - 0.162) ) = 1;
+            id_lat_p((m.nodes(:,1) > 0.51 | m.nodes(:,1) < - 0.51) ) = 1;
+            
+            %s_lat
+            s_lat_p = 3*id_lat_p .* inh (0.65, id_rad_p);
+            m = leaf_mgen_conductivity( m, 's_lat', 0.00002 );
+            m = leaf_mgen_absorption( m, 's_lat', 0.0002 );
+            
+            %ID_MED
+            id_med_p (m.nodes(:,1) > 0.335 & m.nodes(:,1) < 0.35) = 1;
+            id_med_p (m.nodes(:,1) < - 0.335 & m.nodes(:,1) > - 0.35) = 1;
+            id_med_p (m.nodes(:,1) > - 0.008 & m.nodes(:,1) < 0.008) = 1;
+            
+            %S_MED
+            s_med_p(:) = 0;
+            s_med_p(:) = 5*id_med_p(:);
+            m = leaf_mgen_conductivity( m, 'S_MED', 0.00002 );
+            m = leaf_mgen_absorption( m, 'S_MED', 0.0002 );
+            
+            %ID_secvein
+            id_secvein_p (m.nodes(:,1) > 0.241 & m.nodes(:,1) < 0.252) = 1;
+            id_secvein_p (m.nodes(:,1) < - 0.241 & m.nodes(:,1) > - 0.252) = 1;
+            id_secvein_p (m.nodes(:,1) > 0.431 & m.nodes(:,1) < 0.447) = 1;
+            id_secvein_p (m.nodes(:,1) < - 0.431 & m.nodes(:,1) > - 0.447) = 1;
+            id_secvein_p (m.nodes(:,1) > 0.085 & m.nodes(:,1) < 0.097) = 1;
+            id_secvein_p (m.nodes(:,1) < - 0.085 & m.nodes(:,1) > - 0.097) = 1;
+            
+            %S_secvein
+            s_secvein_p(:) = 0;
+            s_secvein_p(:) = 5*id_secvein_p(:);
+            m = leaf_mgen_conductivity( m, 'S_SECVEIN', 0.00001 );
+            m = leaf_mgen_absorption( m, 'S_SECVEIN', 0.01 );
+            
+            %Other factors
+            
+            %S_SOURCE
+            s_source_p(:) = 0;
+            s_source_p(:) = 5*id_source_p;
+            m = leaf_mgen_conductivity( m, 'S_SOURCE', 0.00002 );
+            m = leaf_mgen_absorption( m, 'S_SOURCE', 0.0002 );
+            
+            %S_SINK
+            s_sink_p(:) = 0;
+            s_sink_p(:) = 5*id_sink_p;
+            m = leaf_mgen_conductivity( m, 'S_SINK', 0.000005 );
+            m = leaf_mgen_absorption( m, 'S_SINK', 0.00005 );
+            
+            
+    end
+    
+end
+
+if(Steps(m)==5)
+    m = leaf_mgen_conductivity( m, 'S_MED', 0 );
+    m = leaf_mgen_absorption( m, 'S_MED', 0 );
+    m = leaf_mgen_conductivity( m, 'S_SOURCE', 0 );
+    m = leaf_mgen_absorption( m, 'S_SOURCE', 0 );
+    m = leaf_mgen_conductivity( m, 's_lat', 0 );
+    m = leaf_mgen_absorption( m, 's_lat', 0 );
+    m = leaf_mgen_conductivity( m, 'S_RIM', 0 );
+    m = leaf_mgen_absorption( m, 'S_RIM', 0 );
+    m = leaf_mgen_conductivity( m, 'S_SINK', 0 );
+    m = leaf_mgen_absorption( m, 'S_SINK', 0 );
+    m = leaf_mgen_conductivity( m, 'S_SECVEIN', 0 );
+    m = leaf_mgen_absorption( m, 'S_SECVEIN', 0 );
+    m = leaf_mgen_conductivity( m, 'S_DIV', 0 );
+    m = leaf_mgen_absorption( m, 'S_DIV', 0 );
+    m = leaf_mgen_conductivity( m, 'S_RAD', 0);
+    m = leaf_mgen_absorption( m, 'S_RAD', 0);
+    
+    switch modelname
+        
+        case  {'Figure 9J. No orthogonal conflict', 'Figure 9 A-F. Phase I + II of div domes','Figure 9G. No surface conflict', 'Figure 9I. No directional conflict and specified anisotropy','Figure 9H. No areal conflict', 'WT_criss-cross'}
+            
+            m = leaf_mgen_conductivity( m, 'POLARISER', 0 );  %specifies the diffusion rate of polariser
+            m = leaf_mgen_absorption( m, 'POLARISER', 0 );
+            
+            %S_DIV
+            s_div_p(:) = 0;
+            s_div_p(:) = id_div_p .* inh (100, s_rad_p);
+            
+        case  {'Figure 10A-F.   Phase I + II of wild-type wedge', 'WT_criss-cross + sinus_A+B', 'Figure 10I. No directional conflict',...
+                'Figure 10J. No orthogonal directional conflict', 'WT_criss-cross + sinus_B_no surface conflict',...
+                'Figure 10H. No areal conflict','WT_timing all at day 10'}
+            
+            %S_DIV
+            s_div_p(:) = 0;
+            s_div_p(:) = id_div_p .* inh (100, s_rad_p);
+            
+    end
+end
+
+% if(Steps(m)==12)
+%     %add clones
+%     
+%     m = leaf_makesecondlayer( m, ...  % This function adds biological cells.
+%         'mode', 'each', ...
+%         'probpervx', 'V_FLOWER', ... % induce tranls randomly scattered over the flower.
+%         'relarea', 1/5000, ...   % cell size calculated represent more or less one cell
+%         'numcells',2500,...%number of cells (that will become clones)
+%         'sides', 16, ...  % Each cell is approximated as a 6-sided regular polygon.
+%         'colors', [0.5 0.5 0.5], ...  % Default colour is gray but
+%         'allowoverlap', false, ...
+%         'colorvariation',1,... % Each cell is a random colour
+%         'add', true );  % These cells are added to any cells existing already
+%     m = leaf_plotoptions( m, 'cellbodyvalue', '' );
+%     %  m = leaf_setproperty( m, 'biosplitarea', yourpreferredarea ); % WE can specify to which area do cells split
+%     
+% end
+if(Steps(m)==12)
+    switch modelname
+        
+        %Introducing a new minus organiser at the sinus
+        case  {'Figure 10A-F.   Phase I + II of wild-type wedge', 'WT_criss-cross + sinus_B_no surface conflict', 'Figure 10J. No orthogonal directional conflict',...
+                'Figure 10H. No areal conflict', 'WT_timing all at day 10'} %reorientation only at the B side (adaxial)
+            
+            id_sinus_p = (s_lat_p.^2) .* s_sink_p .* inh (100, id_hinge_p);
+            
+            m = leaf_mgen_conductivity( m, 'POLARISER', 0.0001 );  %specifies the diffusion rate of polariser
+            m = leaf_mgen_absorption( m, 'POLARISER', 0.001 );     % specifies degradation rate of polariser
+            P(id_source_p==1) = 1;
+            P(id_sink_p==1) = 0.5;
+            m.morphogenclamp((id_source_p==1), polariser_i) = 1;
+            m.morphogenclamp((id_sink_p==1), polariser_i) = 1;
+            P(id_sinus_p >0.03) = 0.45; % IUSED TO BE > 0.1 
+            m.morphogenclamp((id_sinus_p==1), polariser_i) = 1;
+            m = leaf_setpolfrozen (m, id_lip_p, false); % should freeze polarity on A side so it only reorients on the B side, this will be effcetive in the lip region
+             
+        case  'WT_criss-cross + sinus_A+B'%reorientation in both sides of the canvas
+            
+            id_sinus_p = (s_lat_p.^2) .* s_sink_p .* inh (100, id_hinge_p);
+            
+            m = leaf_mgen_conductivity( m, 'POLARISER', 0.0001 );  %specifies the diffusion rate of polariser
+            m = leaf_mgen_absorption( m, 'POLARISER', 0.001 );     % specifies degradation rate of polariser
+            P(id_source_p==1) = 1;
+            P(id_sink_p==1) = 0.5;
+            m.morphogenclamp((id_source_p==1), polariser_i) = 1;
+            m.morphogenclamp((id_sink_p==1), polariser_i) = 1;
+            P(id_sinus_p >0.03) = 0.1; % IUSED TO BE > 0.01 and  = 0.00001
+            m.morphogenclamp((id_sinus_p==1), polariser_i) = 1;
+            % m = leaf_setpolfrozen (m, id_lip_p, false); % should freeze polarity on A side so it only reorients on the B side, this will be effcetive in the lip region
+            
+    end
+end
+
+if(Steps(m)==14)
+    switch modelname
+        
+        case  {'Figure 10A-F.   Phase I + II of wild-type wedge', 'WT_criss-cross + sinus_A+B', 'Figure 10J. No orthogonal directional conflict', 'WT_criss-cross + sinus_B_no surface conflict',...
+                'Figure 10H. No areal conflict', 'WT_timing all at day 10'}
+            
+            m = leaf_mgen_conductivity( m, 'POLARISER', 0 );  %specifies the diffusion rate of polariser
+            m = leaf_mgen_absorption( m, 'POLARISER', 0 );
+    end
+end
+
+if (Steps(m)>6) %day 10
+    % Code for specific models.
+    switch modelname
+                          
+        case  {'Figure 9 A-F. Phase I + II of div domes', 'Figure 9I. No directional conflict and specified anisotropy'} %Adjusting the growth rates to the system use for the Antirrhinum model
+
+            kbpar_p(:) = 0.02... % basic kpar growth rate
+                .* inh (5, s_rad_p)... % keeps the hinge region from growing in length
+                .* pro (0.8, id_lipdistal_p); % grows the lip region in length
+            
+            kbper_p(:) = 0.005... % basic kper growth rate
+                .* inh (3, s_rad_p); % keeps hinge narrow
+            
+            kapar_p(:) = kbpar_p...
+                .* inh (0.5, (s_rim_p>0.4).* inh (100, s_rad_p));% promotes furrow formation
+            
+            kaper_p(:) = kbper_p;
+            
+            knor_p(:)  = 0.0044;  % growth in canvas thickness
+            
+            v_kaniso_p = log( kbpar_p./kbper_p); % visualise growth anisotropy in ln scale
+            v_karea_p = kbper_p + kbpar_p; % visualise areal growth rate
+            
+            if (Steps(m)>11)%morphogenetic repatterning at day 12
+                
+                id_brim_p (:) = s_rim_p > 0.01; %set region of brim dependent of the gradient of rim
+                
+                kbpar_p(:) = 0.012... % basic kpar growth rate 
+                    .* inh (5, s_rad_p .* pro (3, id_lip_p))... % continuation of inh in hinge promoted speciafically in the lip to precente curling
+                    .* pro (0.8, id_lipdistal_p)...% continuation of lip growth 
+                    .* inh (2, s_rim_p)... % keeping the kpar low in the horizontal arms
+                    .* pro (0.8, s_lat_p .* id_brim_p );... % create the vertical arms of crosses 
+                    
+                kbper_p(:) = 0.012 ... % basic kper growth rate  IDEALLY NOT LATE DEPENDENT USED TO BE 0.1
+                    .* inh (3, s_rad_p)...% keeps hinge narrow
+                    .* pro (2.5, s_rim_p)... % creating the horizontal arms in div and WT
+                    .* inh (3, s_lat_p)...% keeping the kper low in the vertical arms
+                    .* inh (3, s_med_p); % keep the midvein region regions narrow %INCREASED FROM 2
+                
+                kapar_p(:) = kbpar_p ...
+                    .* inh (0.5, (s_rim_p>0.4).* inh (100, s_rad_p));% promotes furrow formation
+                
+                kaper_p(:) = kbper_p;
+                knor_p(:)  = 0.0044;  % growth in canvas thickness
+                v_kaniso_p = log( kbpar_p./kbper_p);% visualise growth anisotropy in ln scale
+                v_karea_p = kbper_p + kbpar_p;% visualise areal growth rate
+
+            end
+            
+            case  'Figure 9J. No orthogonal conflict'
+            
+           
+            kbpar_p(:) = 0.02... % basic kpar growth rate
+                .* inh (5, s_rad_p)... % keeps the hinge region from growing in length particularly in the lip region
+                .* pro (0.8, id_lipdistal_p); % grows the lip region in length
+            
+            kbper_p(:) = 0.005... % basic kper growth rate
+                .* inh (3, s_rad_p); % keeps hinge narrow
+            
+            kapar_p(:) = kbpar_p...
+                .* inh (0.5, (s_rim_p>0.4).* inh (100, s_rad_p));% promotes furrow formation
+            
+            kaper_p(:) = kbper_p;
+            
+            knor_p(:)  = 0.0044;  % growth in canvas thickness
+            
+            v_kaniso_p = log( kbpar_p./kbper_p); % visualise growth anisotropy in ln scale
+            v_karea_p = kbper_p + kbpar_p; % visualise areal growth rate
+            
+            
+            if (Steps(m)>11) %morphogenetic repatterning at day 12
+                
+                kbpar_p(:) = 0.012... % basic kpar growth rate IDEALLY NOT LATE DEPENDENT USED TO BE 0.1
+                    .* inh (5, s_rad_p .* pro (3, id_lip_p))... % continuation of inh in hinge promoted speciafically in the lip to precente curling
+                    .* pro (0.8, id_lipdistal_p)...
+                    ....* inh (2, s_rim_p)...
+                    ....* pro (0.8, s_lat_p .* id_brim_p );% continuation of lip growth in length
+                
+                kbper_p(:) = 0.012 ... % basic kper growth rate  IDEALLY NOT LATE DEPENDENT USED TO BE 0.1
+                    .* inh (3, s_rad_p)...% keeps hinge narrow
+                    ....* pro (2.5, s_rim_p)... % creating the horizontal arms in div and WT
+                    ....* inh (3, s_lat_p)...    
+                    .* inh (3, s_med_p); % keep the midvein region regions narrow
+                
+                kapar_p(:) = kbpar_p ...
+                     .* inh (0.5, (s_rim_p>0.4).* inh (100, s_rad_p));% promotes furrow formation
+                
+                kaper_p(:) = kbper_p;
+                
+                knor_p(:)  = 0.0044;  % growth in canvas thickness
+                
+                v_kaniso_p = log( kbpar_p./kbper_p);% visualise growth anisotropy in ln scale
+                v_karea_p = kbper_p + kbpar_p;% visualise areal growth rate
+                
+            end
+
+           case  'Figure 9G. No surface conflict' %Adjusting the growth rates to the system use for the Antirrhinum model
+
+            kbpar_p(:) = 0.02... % basic kpar growth rate
+                .* inh (5, s_rad_p)... % keeps the hinge region from growing in length
+                .* pro (0.8, id_lipdistal_p); % grows the lip region in length
+            
+            kbper_p(:) = 0.005... % basic kper growth rate
+                .* inh (3, s_rad_p); % keeps hinge narrow
+            
+            kapar_p(:) = kbpar_p...
+                ... .* inh (0.5, (s_rim_p>0.4).* inh (100, s_rad_p));% promotes furrow formation
+            
+            kaper_p(:) = kbper_p;
+            
+            knor_p(:)  = 0.0044;  % growth in canvas thickness
+            
+            v_kaniso_p = log( kbpar_p./kbper_p); % visualise growth anisotropy in ln scale
+            v_karea_p = kbper_p + kbpar_p; % visualise areal growth rate
+            
+            if (Steps(m)>11)%morphogenetic repatterning at day 12
+                
+                id_brim_p (:) = s_rim_p > 0.01; %set region of brim dependent of the gradient of rim
+                
+                kbpar_p(:) = 0.012... % basic kpar growth rate 
+                    .* inh (5, s_rad_p .* pro (3, id_lip_p))... % continuation of inh in hinge promoted speciafically in the lip to precente curling
+                    .* pro (0.8, id_lipdistal_p)...% continuation of lip growth 
+                    .* inh (2, s_rim_p)... % keeping the kpar low in the horizontal arms
+                    .* pro (0.8, s_lat_p .* id_brim_p );... % create the vertical arms of crosses 
+                    
+                kbper_p(:) = 0.012 ... % basic kper growth rate  IDEALLY NOT LATE DEPENDENT USED TO BE 0.1
+                    .* inh (3, s_rad_p)...% keeps hinge narrow
+                    .* pro (2.5, s_rim_p)... % creating the horizontal arms in div and WT
+                    .* inh (3, s_lat_p)...% keeping the kper low in the vertical arms
+                    .* inh (3, s_med_p); % keep the midvein region regions narrow %INCREASED FROM 2
+                
+                kapar_p(:) = kbpar_p ...
+                    ... .* inh (0.5, (s_rim_p>0.4).* inh (100, s_rad_p));% promotes furrow formation
+                
+                kaper_p(:) = kbper_p;
+                knor_p(:)  = 0.0044;  % growth in canvas thickness
+                v_kaniso_p = log( kbpar_p./kbper_p);% visualise growth anisotropy in ln scale
+                v_karea_p = kbper_p + kbpar_p;% visualise areal growth rate
+
+            end
+             case 'Figure 9H. No areal conflict'%Adjusting the growth rates to the system use for the Antirrhinum model
+
+            kbpar_p(:) = 0.02... % basic kpar growth rate
+                .* inh (5, s_rad_p)... % keeps the hinge region from growing in length
+                .* pro (0.8, id_lipdistal_p); % grows the lip region in length
+            
+            kbper_p(:) = 0.005... % basic kper growth rate
+                .* inh (3, s_rad_p); % keeps hinge narrow
+            
+            kapar_p(:) = kbpar_p...
+                 .* inh (0.5, (s_rim_p>0.4).* inh (100, s_rad_p));% promotes furrow formation
+            
+            kaper_p(:) = kbper_p;
+            
+            knor_p(:)  = 0.0044;  % growth in canvas thickness
+            
+            v_kaniso_p = log( kbpar_p./kbper_p); % visualise growth anisotropy in ln scale
+            v_kareab_p = kbper_p + kbpar_p; % visualise areal growth rate
+            v_kareaa_p = kaper_p + kapar_p;
+            kbpar_p (:) = 0.025*kbpar_p./v_kareab_p;
+            kapar_p (:) = 0.025*kapar_p./v_kareaa_p;
+            kbper_p (:) = 0.025*kbper_p./v_kareab_p;
+            kaper_p (:) = 0.025*kaper_p./v_kareaa_p;
+            v_kareab_p = kbper_p + kbpar_p; % visualise areal growth rate
+            v_kareaa_p = kaper_p + kapar_p;
+            v_kaniso_p = log( kbpar_p./kbper_p); % visualise growth anisotropy in ln scale
+            
+            if (Steps(m)>11)%morphogenetic repatterning at day 12
+                
+                id_brim_p (:) = s_rim_p > 0.01; %set region of brim dependent of the gradient of rim
+                
+                kbpar_p(:) = 0.012... % basic kpar growth rate
+                    .* inh (5, s_rad_p .* pro (3, id_lip_p))... % continuation of inh in hinge promoted speciafically in the lip to precente curling
+                    .* pro (0.8, id_lipdistal_p)...% continuation of lip growth
+                    .* inh (2, s_rim_p)... % keeping the kpar low in the horizontal arms
+                    .* pro (0.8, s_lat_p .* id_brim_p );... % create the vertical arms of crosses
+                    
+                kbper_p(:) = 0.012 ... % basic kper growth rate  IDEALLY NOT LATE DEPENDENT USED TO BE 0.1
+                    .* inh (3, s_rad_p)...% keeps hinge narrow
+                    .* pro (2.5, s_rim_p)... % creating the horizontal arms in div and WT
+                    .* inh (3, s_lat_p )...% keeping the kper low in the vertical arms
+                    .* inh (3, s_med_p); % keep the midvein region regions narrow %INCREASED FROM 2
+                
+                kapar_p(:) = kbpar_p ...
+                    .* inh (0.5, (s_rim_p>0.4).* inh (100, s_rad_p));% promotes furrow formation
+                
+                kaper_p(:) = kbper_p;
+                knor_p(:)  = 0.0044;  % growth in canvas thickness
+                v_kaniso_p = log( kbpar_p./kbper_p); % visualise growth anisotropy in ln scale
+                v_kareab_p = kbper_p + kbpar_p; % visualise areal growth rate
+                v_kareaa_p = kaper_p + kapar_p;
+                kbpar_p (:) = 0.025*kbpar_p./v_kareab_p;
+                kapar_p (:) = 0.025*kapar_p./v_kareaa_p;
+                kbper_p (:) = 0.025*kbper_p./v_kareab_p;
+                kaper_p (:) = 0.025*kaper_p./v_kareaa_p;
+                v_kareab_p = kbper_p + kbpar_p; % visualise areal growth rate
+                v_kareaa_p = kaper_p + kapar_p;
+                v_kaniso_p = log( kbpar_p./kbper_p); % visualise growth anisotropy in ln scale
+                
+            end
+            
+        case  'WT_criss-cross' %Adjusting the growth rates to the system use for the Antirrhinum model
+            
+            kbpar_p(:) = 0.02... % basic kpar growth rate
+                .* inh (5, s_rad_p)... % keeps the hinge region from growing in length
+                .* pro (0.8, id_lipdistal_p ).... % grows the lip region in length
+                .* pro (1.5, s_div_p .* id_lipcliff_p)... %grows proximal lip region in length, important to create the region where the perpendicular growth that form the cheeks will happen
+                .* pro (0.8, s_div_p .* id_palate_p .* pro (0.3, id_palateprox_p).* inh (5, id_source_p)); % DIV dependent growth in WT palate
+            
+            kbper_p(:) = 0.005... % basic kper growth rate
+                .* inh (3, s_rad_p); % keeps hinge narrow
+            
+            kapar_p(:) = kbpar_p...
+                .* inh (3, s_div_p .* s_rim_p .* inh (10, s_med_p) .* inh (100, s_rad_p)); %promotes furrow formation in WT by extending the asymetry between A and B with s_rim
+            
+            kaper_p(:) = kbper_p;
+            
+            knor_p(:)  = 0.0044;  % @@ Eqn xx
+            
+            v_kaniso_p = log( kbpar_p./kbper_p); % visualise growth anisotropy in ln scale
+            v_karea_p = kbper_p + kbpar_p; % visualise areal growth rate
+            
+            if (Steps(m)>11)
+                
+                id_brim_p (:) = s_rim_p > 0.01;
+                
+                kbpar_p(:) = 0.012... % basic kpar growth rate IDEALLY NOT LATE DEPENDENT USED TO BE 0.1
+                    .* inh (5, s_rad_p .* pro (3, id_lip_p))... % continuation of inh in hinge promoted specifically in the lip to prevente curling of the edges of the wedge
+                    .* pro (0.8, id_lipdistal_p)...% continuation of lip growth
+                    .* pro (0.5, s_div_p .* id_lipcliff_p)...%reduction if lipcliff growth upon the morphogenetic repatterning
+                    .* pro (0.8, s_div_p .* id_palate_p .* pro (0.3, id_palateprox_p).* inh (5, id_source_p))...% continuation of DIV dependent growth in WT palate
+                    .* inh (2, s_rim_p)... % keeping the kpar low in the horizontal arms
+                    .* inh (0.2, (s_div_p >0.95) .* s_med_p .*id_brim_p)...% makes cleft in the ventral lip
+                    .* inh (50, s_rad_p .*id_lipdistal_p.*inh (100, id_hinge_p))...%reduces parallel growth at the edge of the lip to make a triangular cheek
+                    .* pro (0.8, s_lat_p .* id_brim_p); % create the vertical arm of crosses in div and WT
+                
+                kbper_p(:) = 0.012 ... % basic kper growth rate  IDEALLY NOT LATE DEPENDENT USED TO BE 0.1
+                    .* inh (3, s_rad_p )...% keeps hinge narrow
+                    .* pro (2.5,  s_rim_p .* pro (0.5, s_div_p))... % creating the horizontal arms in div and promoted in WT by DIV
+                    .* inh (3, s_lat_p .* inh (1, (s_div_p>0.83).*id_lipcliff_p))...% keeping the kper low in the vertical arms
+                    .* inh (0.5, (s_div_p >0.95) .* pro (1, 4*s_rim_p + 1.5*id_lipdistal_p).* inh (100, id_palateprox_p))... % keeps the WT ventral petal narrow and prevents the formation of two big peaks at the foci such as the Div het
+                    .* inh (3, s_med_p .* inh (10,id_palate_p .*s_div_p))... % keep the midvein region regions narrow
+                    .* inh (2, (1-s_div_p) .* id_lipdistal_p .*pro (2, id_sink_p).*inh (100, id_hinge_p))...% prevents fanning of the lip region in WT by keeping the upper edge of the lip lower in Kper   
+                    .* pro (4.8, s_div_p .* id_lip_p.*s_secvein_p .*inh (8, s_rim_p)); % extends the horizontal arms to the proximal lip region
+                
+                kapar_p(:) = kbpar_p ...
+                    .* inh (3, s_div_p .*s_rim_p .* inh (10, s_med_p) .* inh (100, s_rad_p));% promotes furrow formation in WT by extending the asymetry between A and B with s_rim
+                
+                kaper_p(:) = kbper_p...
+                    .* inh (0.5, (s_div_p >0.95) .*id_lip_p); % makes ventral cheeks pop out
+                
+                v_kaniso_p = log( kbpar_p./kbper_p);
+                v_karea_p = kbper_p + kbpar_p;
+                
+            end
+            
+            
+        case  {'Figure 10A-F.   Phase I + II of wild-type wedge', 'Figure 10I. No directional conflict'}  %Adjusting the growth rates to the system use for the Antirrhinum model
+
+            % palate length along junction = 14 mm
+            % lip length along the junction = 10 mm
+            % palate width at bottom = 15 mm
+            % palate width at bottom of wedge = 8.5 mm
+            % width of lip at ventral petal = 6.5 mm
+            % width of lip at lateral petal = 10 mm
+            kbpar_p(:) = 0.02... % basic kpar growth rate
+                .* inh (5, s_rad_p)... % keeps the hinge region from growing in length
+                .* pro (0.8, id_lipdistal_p ).... % grows the lip region in length
+                .* pro (1.5, s_div_p .* id_lipcliff_p)... %grows proximal lip region in length, important to create the region where the perpendicular growth that form the cheeks will happen
+                .* pro (0.8, s_div_p .* id_palate_p .* pro (0.3, id_palateprox_p).* inh (5, id_source_p)); % DIV dependent growth in WT palate
+            
+            kbper_p(:) = 0.005... % basic kper growth rate
+                .* inh (3, s_rad_p); % keeps hinge narrow
+            
+            kapar_p(:) = kbpar_p...
+                .* inh (3, s_div_p .* s_rim_p .* inh (10, s_med_p) .* inh (100, s_rad_p)); %promotes furrow formation in WT by extending the asymetry between A and B with s_rim
+            
+            kaper_p(:) = kbper_p;
+            
+            knor_p(:)  = 0.0044;  % @@ Eqn xx
+            
+            v_kaniso_p = log( kbpar_p./kbper_p); % visualise growth anisotropy in ln scale
+            v_karea_p = kbper_p + kbpar_p; % visualise areal growth rate
+            
+            if (Steps(m)>11)
+                
+                id_brim_p (:) = s_rim_p > 0.01;
+                
+                kbpar_p(:) = 0.012... % basic kpar growth rate IDEALLY NOT LATE DEPENDENT USED TO BE 0.1
+                    .* inh (5, s_rad_p .* pro (3, id_lip_p))... % continuation of inh in hinge promoted specifically in the lip to prevente curling of the edges of the wedge
+                    .* pro (0.8, id_lipdistal_p)...% continuation of lip growth
+                    .* pro (0.5, s_div_p .* id_lipcliff_p)...%reduction if lipcliff growth upon the morphogenetic repatterning
+                    .* pro (0.8, s_div_p .* id_palate_p .* pro (0.3, id_palateprox_p).* inh (5, id_source_p))...% continuation of DIV dependent growth in WT palate
+                    .* inh (2, s_rim_p)... % keeping the kpar low in the horizontal arms
+                    .* inh (0.2, (s_div_p >0.95) .* s_med_p .*id_brim_p)...% makes cleft in the ventral lip
+                    .* inh (50, s_rad_p .*id_lipdistal_p.*inh (100, id_hinge_p))...%reduces parallel growth at the edge of the lip to make a triangular cheek
+                    .* pro (0.8, s_lat_p .* id_brim_p); % create the vertical arm of crosses in div and WT
+                
+                kbper_p(:) = 0.012 ... % basic kper growth rate  IDEALLY NOT LATE DEPENDENT USED TO BE 0.1
+                    .* inh (3, s_rad_p )...% keeps hinge narrow
+                    .* pro (2.5,  s_rim_p .* pro (0.5, s_div_p))... % creating the horizontal arms in div and promoted in WT by DIV
+                    .* inh (3, s_lat_p .* inh (1, (s_div_p>0.83).*id_lipcliff_p))...% keeping the kper low in the vertical arms
+                    .* inh (0.5, (s_div_p >0.95) .* pro (1, 4*s_rim_p + 1.5*id_lipdistal_p).* inh (100, id_palateprox_p))... % keeps the WT ventral petal narrow and prevents the formation of two big peaks at the foci such as the Div het
+                    .* inh (3, s_med_p .* inh (10,id_palate_p .*s_div_p))... % keep the midvein region regions narrow
+                    .* inh (2, (1-s_div_p) .* id_lipdistal_p .*pro (2, id_sink_p).*inh (100, id_hinge_p))...% prevents fanning of the lip region in WT by keeping the upper edge of the lip lower in Kper   
+                    .* pro (4.8, s_div_p .* id_lip_p.*s_secvein_p .*inh (8, s_rim_p)); % extends the horizontal arms to the proximal lip region
+                
+                kapar_p(:) = kbpar_p ...
+                    .* inh (3, s_div_p .*s_rim_p .* inh (10, s_med_p) .* inh (100, s_rad_p));% promotes furrow formation in WT by extending the asymetry between A and B with s_rim
+                
+                kaper_p(:) = kbper_p...
+                    .* inh (0.5, (s_div_p >0.95) .*id_lip_p); % makes ventral cheeks pop out
+                
+                v_kaniso_p = log( kbpar_p./kbper_p);
+                v_karea_p = kbper_p + kbpar_p;
+                
+            end
+            
+             case  {'Figure 10J. No orthogonal directional conflict'}  %Adjusting the growth rates to the system use for the Antirrhinum model
+
+            % palate length along junction = 14 mm
+            % lip length along the junction = 10 mm
+            % palate width at bottom = 15 mm
+            % palate width at bottom of wedge = 8.5 mm
+            % width of lip at ventral petal = 6.5 mm
+            % width of lip at lateral petal = 10 mm
+            kbpar_p(:) = 0.02... % basic kpar growth rate
+                .* inh (5, s_rad_p)... % keeps the hinge region from growing in length
+                .* pro (0.8, id_lipdistal_p ).... % grows the lip region in length
+                .* pro (1.5, s_div_p .* id_lipcliff_p)... %grows proximal lip region in length, important to create the region where the perpendicular growth that form the cheeks will happen
+                .* pro (0.8, s_div_p .* id_palate_p .* pro (0.3, id_palateprox_p).* inh (5, id_source_p)); % DIV dependent growth in WT palate
+            
+            kbper_p(:) = 0.005... % basic kper growth rate
+                .* inh (3, s_rad_p); % keeps hinge narrow
+            
+            kapar_p(:) = kbpar_p...
+                .* inh (3, s_div_p .* s_rim_p .* inh (10, s_med_p) .* inh (100, s_rad_p)); %promotes furrow formation in WT by extending the asymetry between A and B with s_rim
+            
+            kaper_p(:) = kbper_p;
+            
+            knor_p(:)  = 0.0044;  % @@ Eqn xx
+            
+            v_kaniso_p = log( kbpar_p./kbper_p); % visualise growth anisotropy in ln scale
+            v_karea_p = kbper_p + kbpar_p; % visualise areal growth rate
+            
+            if (Steps(m)>11)
+                
+                id_brim_p (:) = s_rim_p > 0.01;
+                
+                kbpar_p(:) = 0.012... % basic kpar growth rate IDEALLY NOT LATE DEPENDENT USED TO BE 0.1
+                    .* inh (5, s_rad_p .* pro (3, id_lip_p))... % continuation of inh in hinge promoted specifically in the lip to prevente curling of the edges of the wedge
+                    .* pro (0.8, id_lipdistal_p)...% continuation of lip growth
+                    .* pro (0.5, s_div_p .* id_lipcliff_p)...%reduction if lipcliff growth upon the morphogenetic repatterning
+                    .* pro (0.8, s_div_p .* id_palate_p .* pro (0.3, id_palateprox_p).* inh (5, id_source_p))...% continuation of DIV dependent growth in WT palate
+                    ...* inh (2, s_rim_p)... % keeping the kpar low in the horizontal arms
+                    .* inh (0.2, (s_div_p >0.95) .* s_med_p .*id_brim_p)...% makes cleft in the ventral lip
+                    .* inh (50, s_rad_p .*id_lipdistal_p.*inh (100, id_hinge_p))...%reduces parallel growth at the edge of the lip to make a triangular cheek
+                    ....* pro (0.8, s_lat_p .* id_brim_p); % create the vertical arm of crosses in div and WT
+                
+                kbper_p(:) = 0.012 ... % basic kper growth rate  IDEALLY NOT LATE DEPENDENT USED TO BE 0.1
+                    .* inh (3, s_rad_p )...% keeps hinge narrow
+                    ....* pro (2.5,  s_rim_p .* pro (0.5, s_div_p))... % creating the horizontal arms in div and promoted in WT by DIV
+                    ....* inh (3, s_lat_p .* inh (1, (s_div_p>0.83).*id_lipcliff_p))...% keeping the kper low in the vertical arms
+                    .* inh (0.5, (s_div_p >0.95) .* pro (1, 4*s_rim_p + 1.5*id_lipdistal_p).* inh (100, id_palateprox_p))... % keeps the WT ventral petal narrow and prevents the formation of two big peaks at the foci such as the Div het
+                    .* inh (3, s_med_p .* inh (10,id_palate_p .*s_div_p))... % keep the midvein region regions narrow
+                    .* inh (2, (1-s_div_p) .* id_lipdistal_p .*pro (2, id_sink_p).*inh (100, id_hinge_p))...% prevents fanning of the lip region in WT by keeping the upper edge of the lip lower in Kper   
+                    ....* pro (4.8, s_div_p .* id_lip_p.*s_secvein_p .*inh (8, s_rim_p)); % extends the horizontal arms to the proximal lip region
+                
+                kapar_p(:) = kbpar_p ...
+                    .* inh (3, s_div_p .*s_rim_p .* inh (10, s_med_p) .* inh (100, s_rad_p));% promotes furrow formation in WT by extending the asymetry between A and B with s_rim
+                
+                kaper_p(:) = kbper_p...
+                    .* inh (0.5, (s_div_p >0.95) .*id_lip_p); % makes ventral cheeks pop out
+                
+                v_kaniso_p = log( kbpar_p./kbper_p);
+                v_karea_p = kbper_p + kbpar_p;
+                
+            end
+            
+            
+        case  'WT_criss-cross + sinus_A+B' %Adjusting the growth rates to the system use for the Antirrhinum model
+            
+            % palate length along junction = 14 mm
+            % lip length along the junction = 10 mm
+            % palate width at bottom = 15 mm
+            % palate width at bottom of wedge = 8.5 mm
+            % width of lip at ventral petal = 6.5 mm
+            % width of lip at lateral petal = 10 mm
+            
+            kbpar_p(:) = 0.02... % basic kpar growth rate
+                .* inh (5, s_rad_p)... % keeps the hinge region from growing in length
+                .* pro (0.8, id_lipdistal_p ).... % grows the lip region in length
+                .* pro (1.5, s_div_p .* id_lipcliff_p)... %grows proximal lip region in length, important to create the region where the perpendicular growth that form the cheeks will happen
+                .* pro (0.8, s_div_p .* id_palate_p .* pro (0.3, id_palateprox_p).* inh (5, id_source_p)); % DIV dependent growth in WT palate
+            
+            kbper_p(:) = 0.005... % basic kper growth rate
+                .* inh (3, s_rad_p); % keeps hinge narrow
+            
+            kapar_p(:) = kbpar_p...
+                .* inh (3, s_div_p .* s_rim_p .* inh (10, s_med_p) .* inh (100, s_rad_p)); %promotes furrow formation in WT by extending the asymetry between A and B with s_rim
+            
+            kaper_p(:) = kbper_p;
+            
+            knor_p(:)  = 0.0044;  % @@ Eqn xx
+            
+            v_kaniso_p = log( kbpar_p./kbper_p); % visualise growth anisotropy in ln scale
+            v_karea_p = kbper_p + kbpar_p; % visualise areal growth rate
+            
+            if (Steps(m)>11)
+                
+                id_brim_p (:) = s_rim_p > 0.01;
+                
+                kbpar_p(:) = 0.012... % basic kpar growth rate IDEALLY NOT LATE DEPENDENT USED TO BE 0.1
+                    .* inh (5, s_rad_p .* pro (3, id_lip_p))... % continuation of inh in hinge promoted specifically in the lip to prevente curling of the edges of the wedge
+                    .* pro (0.8, id_lipdistal_p)...% continuation of lip growth
+                    .* pro (0.5, s_div_p .* id_lipcliff_p)...%reduction if lipcliff growth upon the morphogenetic repatterning
+                    .* pro (0.8, s_div_p .* id_palate_p .* pro (0.3, id_palateprox_p).* inh (5, id_source_p))...% continuation of DIV dependent growth in WT palate
+                    .* inh (2, s_rim_p)... % keeping the kpar low in the horizontal arms
+                    .* inh (0.2, (s_div_p >0.95) .* s_med_p .*id_brim_p)...% makes cleft in the ventral lip
+                    .* inh (50, s_rad_p .*id_lipdistal_p.*inh (100, id_hinge_p))...%reduces parallel growth at the edge of the lip to make a triangular cheek
+                    .* pro (0.8, s_lat_p .* id_brim_p); % create the vertical arm of crosses in div and WT
+                
+                kbper_p(:) = 0.012 ... % basic kper growth rate  IDEALLY NOT LATE DEPENDENT USED TO BE 0.1
+                    .* inh (3, s_rad_p )...% keeps hinge narrow
+                    .* pro (2.5,  s_rim_p .* pro (0.5, s_div_p))... % creating the horizontal arms in div and promoted in WT by DIV
+                    .* inh (3, s_lat_p .* inh (1, (s_div_p>0.83).*id_lipcliff_p))...% keeping the kper low in the vertical arms
+                    .* inh (0.5, (s_div_p >0.95) .* pro (1, 4*s_rim_p + 1.5*id_lipdistal_p).* inh (100, id_palateprox_p))... % keeps the WT ventral petal narrow and prevents the formation of two big peaks at the foci such as the Div het
+                    .* inh (3, s_med_p .* inh (10,id_palate_p .*s_div_p))... % keep the midvein region regions narrow
+                    .* inh (2, (1-s_div_p) .* id_lipdistal_p .*pro (2, id_sink_p).*inh (100, id_hinge_p))...% prevents fanning of the lip region in WT by keeping the upper edge of the lip lower in Kper   
+                    .* pro (4.8, s_div_p .* id_lip_p.*s_secvein_p .*inh (8, s_rim_p)); % extends the horizontal arms to the proximal lip region
+                
+                kapar_p(:) = kbpar_p ...
+                    .* inh (3, s_div_p .*s_rim_p .* inh (10, s_med_p) .* inh (100, s_rad_p));% promotes furrow formation in WT by extending the asymetry between A and B with s_rim
+                
+                kaper_p(:) = kbper_p...
+                    .* inh (0.5, (s_div_p >0.95) .*id_lip_p); % makes ventral cheeks pop out
+                
+                v_kaniso_p = log( kbpar_p./kbper_p);
+                v_karea_p = kbper_p + kbpar_p;
+                
+            end
+            
+        case  {'WT_criss-cross + sinus_B_no surface conflict'}  %Adjusting the growth rates to the system use for the Antirrhinum model
+
+            % palate length along junction = 14 mm
+            % lip length along the junction = 10 mm
+            % palate width at bottom = 15 mm
+            % palate width at bottom of wedge = 8.5 mm
+            % width of lip at ventral petal = 6.5 mm
+            % width of lip at lateral petal = 10 mm
+            kbpar_p(:) = 0.02... % basic kpar growth rate
+                .* inh (5, s_rad_p)... % keeps the hinge region from growing in length
+                .* pro (0.8, id_lipdistal_p ).... % grows the lip region in length
+                .* pro (1.5, s_div_p .* id_lipcliff_p)... %grows proximal lip region in length, important to create the region where the perpendicular growth that form the cheeks will happen
+                .* pro (0.8, s_div_p .* id_palate_p .* pro (0.3, id_palateprox_p).* inh (5, id_source_p)); % DIV dependent growth in WT palate
+            
+            kbper_p(:) = 0.005... % basic kper growth rate
+                .* inh (3, s_rad_p); % keeps hinge narrow
+            
+            kapar_p(:) = kbpar_p;...
+               ... .* inh (3, s_div_p .* s_rim_p .* inh (10, s_med_p) .* inh (100, s_rad_p)); %promotes furrow formation in WT by extending the asymetry between A and B with s_rim
+            
+            kaper_p(:) = kbper_p;
+            
+            knor_p(:)  = 0.0044;  % @@ Eqn xx
+            
+            v_kaniso_p = log( kbpar_p./kbper_p); % visualise growth anisotropy in ln scale
+            v_karea_p = kbper_p + kbpar_p; % visualise areal growth rate
+            
+            if (Steps(m)>11)
+                
+                id_brim_p (:) = s_rim_p > 0.01;
+                
+                kbpar_p(:) = 0.012... % basic kpar growth rate IDEALLY NOT LATE DEPENDENT USED TO BE 0.1
+                    .* inh (5, s_rad_p .* pro (3, id_lip_p))... % continuation of inh in hinge promoted specifically in the lip to prevente curling of the edges of the wedge
+                    .* pro (0.8, id_lipdistal_p)...% continuation of lip growth
+                    .* pro (0.5, s_div_p .* id_lipcliff_p)...%reduction if lipcliff growth upon the morphogenetic repatterning
+                    .* pro (0.8, s_div_p .* id_palate_p .* pro (0.3, id_palateprox_p).* inh (5, id_source_p))...% continuation of DIV dependent growth in WT palate
+                    .* inh (2, s_rim_p)... % keeping the kpar low in the horizontal arms
+                    .* inh (0.2, (s_div_p >0.95) .* s_med_p .*id_brim_p)...% makes cleft in the ventral lip
+                    .* inh (50, s_rad_p .*id_lipdistal_p.*inh (100, id_hinge_p))...%reduces parallel growth at the edge of the lip to make a triangular cheek
+                    .* pro (0.8, s_lat_p .* id_brim_p); % create the vertical arm of crosses in div and WT
+                
+                kbper_p(:) = 0.012 ... % basic kper growth rate  IDEALLY NOT LATE DEPENDENT USED TO BE 0.1
+                    .* inh (3, s_rad_p )...% keeps hinge narrow
+                    .* pro (2.5,  s_rim_p .* pro (0.5, s_div_p))... % creating the horizontal arms in div and promoted in WT by DIV
+                    .* inh (3, s_lat_p .* inh (1, (s_div_p>0.83).*id_lipcliff_p))...% keeping the kper low in the vertical arms
+                    .* inh (0.5, (s_div_p >0.95) .* pro (1, 4*s_rim_p + 1.5*id_lipdistal_p).* inh (100, id_palateprox_p))... % keeps the WT ventral petal narrow and prevents the formation of two big peaks at the foci such as the Div het
+                    .* inh (3, s_med_p .* inh (10,id_palate_p .*s_div_p))... % keep the midvein region regions narrow
+                    .* inh (2, (1-s_div_p) .* id_lipdistal_p .*pro (2, id_sink_p).*inh (100, id_hinge_p))...% prevents fanning of the lip region in WT by keeping the upper edge of the lip lower in Kper   
+                    .* pro (4.8, s_div_p .* id_lip_p.*s_secvein_p .*inh (8, s_rim_p)); % extends the horizontal arms to the proximal lip region
+                
+                kapar_p(:) = kbpar_p; ...
+                    ....* inh (3, s_div_p .*s_rim_p .* inh (10, s_med_p) .* inh (100, s_rad_p));% promotes furrow formation in WT by extending the asymetry between A and B with s_rim
+                
+                kaper_p(:) = kbper_p;...
+                    ....* inh (0.5, (s_div_p >0.95) .*id_lip_p); % makes ventral cheeks pop out
+                
+                v_kaniso_p = log( kbpar_p./kbper_p);
+                v_karea_p = kbper_p + kbpar_p;
+                
+            end
+           case  {'Figure 10H. No areal conflict'}  %Adjusting the growth rates to the system use for the Antirrhinum model
+
+            % palate length along junction = 14 mm
+            % lip length along the junction = 10 mm
+            % palate width at bottom = 15 mm
+            % palate width at bottom of wedge = 8.5 mm
+            % width of lip at ventral petal = 6.5 mm
+            % width of lip at lateral petal = 10 mm
+            kbpar_p(:) = 0.02... % basic kpar growth rate
+                .* inh (5, s_rad_p)... % keeps the hinge region from growing in length
+                .* pro (0.8, id_lipdistal_p ).... % grows the lip region in length
+                .* pro (1.5, s_div_p .* id_lipcliff_p)... %grows proximal lip region in length, important to create the region where the perpendicular growth that form the cheeks will happen
+                .* pro (0.8, s_div_p .* id_palate_p .* pro (0.3, id_palateprox_p).* inh (5, id_source_p)); % DIV dependent growth in WT palate
+            
+            kbper_p(:) = 0.005... % basic kper growth rate
+                .* inh (3, s_rad_p); % keeps hinge narrow
+            
+            kapar_p(:) = kbpar_p...
+               .* inh (3, s_div_p .* s_rim_p .* inh (10, s_med_p) .* inh (100, s_rad_p)); %promotes furrow formation in WT by extending the asymetry between A and B with s_rim
+            
+            kaper_p(:) = kbper_p;
+            
+            knor_p(:)  = 0.0044;  % @@ Eqn xx
+            
+            v_kaniso_p = log( kbpar_p./kbper_p); % visualise growth anisotropy in ln scale
+            v_kareab_p = kbper_p + kbpar_p; % visualise areal growth rate
+            v_kareaa_p = kaper_p + kapar_p;
+            kbpar_p (:) = 0.025*kbpar_p./v_kareab_p;
+            kapar_p (:) = 0.025*kapar_p./v_kareaa_p;
+            kbper_p (:) = 0.025*kbper_p./v_kareab_p;
+            kaper_p (:) = 0.025*kaper_p./v_kareaa_p;
+            v_kareab_p = kbper_p + kbpar_p; % visualise areal growth rate
+            v_kareaa_p = kaper_p + kapar_p;
+            v_kaniso_p = log( kbpar_p./kbper_p); % visualise growth anisotropy in ln scale
+            
+            if (Steps(m)>11)
+                
+                id_brim_p (:) = s_rim_p > 0.01;
+                
+                kbpar_p(:) = 0.012... % basic kpar growth rate IDEALLY NOT LATE DEPENDENT USED TO BE 0.1
+                    .* inh (5, s_rad_p .* pro (3, id_lip_p))... % continuation of inh in hinge promoted specifically in the lip to prevente curling of the edges of the wedge
+                    .* pro (0.8, id_lipdistal_p)...% continuation of lip growth
+                    .* pro (0.5, s_div_p .* id_lipcliff_p)...%reduction if lipcliff growth upon the morphogenetic repatterning
+                    .* pro (0.8, s_div_p .* id_palate_p .* pro (0.3, id_palateprox_p).* inh (5, id_source_p))...% continuation of DIV dependent growth in WT palate
+                    .* inh (2, s_rim_p)... % keeping the kpar low in the horizontal arms
+                    .* inh (0.2, (s_div_p >0.95) .* s_med_p .*id_brim_p)...% makes cleft in the ventral lip
+                    .* inh (50, s_rad_p .*id_lipdistal_p.*inh (100, id_hinge_p))...%reduces parallel growth at the edge of the lip to make a triangular cheek
+                    .* pro (0.8, s_lat_p .* id_brim_p); % create the vertical arm of crosses in div and WT
+                
+                kbper_p(:) = 0.012 ... % basic kper growth rate  IDEALLY NOT LATE DEPENDENT USED TO BE 0.1
+                    .* inh (3, s_rad_p )...% keeps hinge narrow
+                    .* pro (2.5,  s_rim_p .* pro (0.5, s_div_p))... % creating the horizontal arms in div and promoted in WT by DIV
+                    .* inh (3, s_lat_p .* inh (1, (s_div_p>0.83).*id_lipcliff_p))...% keeping the kper low in the vertical arms
+                    .* inh (0.5, (s_div_p >0.95) .* pro (1, 4*s_rim_p + 1.5*id_lipdistal_p).* inh (100, id_palateprox_p))... % keeps the WT ventral petal narrow and prevents the formation of two big peaks at the foci such as the Div het
+                    .* inh (3, s_med_p .* inh (10,id_palate_p .*s_div_p))... % keep the midvein region regions narrow
+                    .* inh (2, (1-s_div_p) .* id_lipdistal_p .*pro (2, id_sink_p).*inh (100, id_hinge_p))...% prevents fanning of the lip region in WT by keeping the upper edge of the lip lower in Kper   
+                    .* pro (4.8, s_div_p .* id_lip_p.*s_secvein_p .*inh (8, s_rim_p)); % extends the horizontal arms to the proximal lip region
+                
+                kapar_p(:) = kbpar_p ...
+                    .* inh (3, s_div_p .*s_rim_p .* inh (10, s_med_p) .* inh (100, s_rad_p));% promotes furrow formation in WT by extending the asymetry between A and B with s_rim
+                
+                kaper_p(:) = kbper_p...
+                    .* inh (0.5, (s_div_p >0.95) .*id_lip_p); % makes ventral cheeks pop out
+                
+            v_kaniso_p = log( kbpar_p./kbper_p); % visualise growth anisotropy in ln scale
+            v_kareab_p = kbper_p + kbpar_p; % visualise areal growth rate
+            v_kareaa_p = kaper_p + kapar_p;
+            kbpar_p (:) = 0.025*kbpar_p./v_kareab_p;
+            kapar_p (:) = 0.025*kapar_p./v_kareaa_p;
+            kbper_p (:) = 0.025*kbper_p./v_kareab_p;
+            kaper_p (:) = 0.025*kaper_p./v_kareaa_p;
+            v_kareab_p = kbper_p + kbpar_p; % visualise areal growth rate
+            v_kareaa_p = kaper_p + kapar_p;
+            v_kaniso_p = log( kbpar_p./kbper_p); % visualise growth anisotropy in ln scale
+            
+                
+            end 
+            
+          case  {'WT_timing all at day 10'}  %Adjusting the growth rates to the system use for the Antirrhinum model
+
+            % palate length along junction = 14 mm
+            % lip length along the junction = 10 mm
+            % palate width at bottom = 15 mm
+            % palate width at bottom of wedge = 8.5 mm
+            % width of lip at ventral petal = 6.5 mm
+            % width of lip at lateral petal = 10 mm
+            kbpar_p(:) = 0.02... % basic kpar growth rate
+                .* inh (5, s_rad_p)... % keeps the hinge region from growing in length
+                .* pro (0.8, id_lipdistal_p ).... % grows the lip region in length
+                ....* pro (1.5, s_div_p .* id_lipcliff_p)... %grows proximal lip region in length, important to create the region where the perpendicular growth that form the cheeks will happen
+                ....* pro (0.8, s_div_p .* id_palate_p .* pro (0.3, id_palateprox_p).* inh (5, id_source_p)); % DIV dependent growth in WT palate
+            
+            kbper_p(:) = 0.005... % basic kper growth rate
+                .* inh (3, s_rad_p); % keeps hinge narrow
+            
+            kapar_p(:) = kbpar_p...
+                ....* inh (3, s_div_p .* s_rim_p .* inh (10, s_med_p) .* inh (100, s_rad_p)); %promotes furrow formation in WT by extending the asymetry between A and B with s_rim
+            
+            kaper_p(:) = kbper_p;
+            
+            knor_p(:)  = 0.0044;  % @@ Eqn xx
+            
+            v_kaniso_p = log( kbpar_p./kbper_p); % visualise growth anisotropy in ln scale
+            v_karea_p = kbper_p + kbpar_p; % visualise areal growth rate
+            
+            if (Steps(m)>11)
+                
+                id_brim_p (:) = s_rim_p > 0.01;
+                
+                kbpar_p(:) = 0.012... % basic kpar growth rate IDEALLY NOT LATE DEPENDENT USED TO BE 0.1
+                    .* inh (5, s_rad_p .* pro (3, id_lip_p))... % continuation of inh in hinge promoted specifically in the lip to prevente curling of the edges of the wedge
+                    .* pro (0.8, id_lipdistal_p)...% continuation of lip growth
+                    .* pro (0.5, s_div_p .* id_lipcliff_p)...%reduction if lipcliff growth upon the morphogenetic repatterning
+                    .* pro (0.8, s_div_p .* id_palate_p .* pro (0.3, id_palateprox_p).* inh (5, id_source_p))...% continuation of DIV dependent growth in WT palate
+                    .* inh (2, s_rim_p)... % keeping the kpar low in the horizontal arms
+                    .* inh (0.2, (s_div_p >0.95) .* s_med_p .*id_brim_p)...% makes cleft in the ventral lip
+                    .* inh (50, s_rad_p .*id_lipdistal_p.*inh (100, id_hinge_p))...%reduces parallel growth at the edge of the lip to make a triangular cheek
+                    .* pro (0.8, s_lat_p .* id_brim_p); % create the vertical arm of crosses in div and WT
+                
+                kbper_p(:) = 0.012 ... % basic kper growth rate  IDEALLY NOT LATE DEPENDENT USED TO BE 0.1
+                    .* inh (3, s_rad_p )...% keeps hinge narrow
+                    .* pro (2.5,  s_rim_p .* pro (0.5, s_div_p))... % creating the horizontal arms in div and promoted in WT by DIV
+                    .* inh (3, s_lat_p .* inh (1, (s_div_p>0.83).*id_lipcliff_p))...% keeping the kper low in the vertical arms
+                    .* inh (0.5, (s_div_p >0.95) .* pro (1, 4*s_rim_p + 1.5*id_lipdistal_p).* inh (100, id_palateprox_p))... % keeps the WT ventral petal narrow and prevents the formation of two big peaks at the foci such as the Div het
+                    .* inh (3, s_med_p .* inh (10,id_palate_p .*s_div_p))... % keep the midvein region regions narrow
+                    .* inh (2, (1-s_div_p) .* id_lipdistal_p .*pro (2, id_sink_p).*inh (100, id_hinge_p))...% prevents fanning of the lip region in WT by keeping the upper edge of the lip lower in Kper   
+                    .* pro (4.8, s_div_p .* id_lip_p.*s_secvein_p .*inh (8, s_rim_p)); % extends the horizontal arms to the proximal lip region
+                
+                kapar_p(:) = kbpar_p ...
+                    .* inh (3, s_div_p .*s_rim_p .* inh (10, s_med_p) .* inh (100, s_rad_p));% promotes furrow formation in WT by extending the asymetry between A and B with s_rim
+                
+                kaper_p(:) = kbper_p...
+                    .* inh (0.5, (s_div_p >0.95) .*id_lip_p); % makes ventral cheeks pop out
+                
+                v_kaniso_p = log( kbpar_p./kbper_p);
+                v_karea_p = kbper_p + kbpar_p;
+                
+            end
+            
+        otherwise
+            % If this happens, maybe you forgot a model.
+    end
+end

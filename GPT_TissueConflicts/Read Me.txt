@@ -1,0 +1,49 @@
+Hello
+
+Here is a list of each model and the project it belongs to for Rebocho et.al. 2016
+
+Project: 'GPT_Domes_20161213' contains models:
+
+'Figure 1A, B. Uniform isotropic growth';
+'Figure 1C, D. Uniform anisotropic growth';
+'Figure 1E, F.  Surface conflict'; 
+'Figure 1G, H. Areal conflict'; 
+'Figure 1I, J. Convergent directional conflict';
+'Figure 1 Sup 1 A, B. Areal conflict flat start'; 
+'Figure 1 Sup 1 C, D. Convergent directional conflict flat start';     
+'Figure 6F, G. Orthogonal directional conflict'; 
+'Figure 6H, I.  T-shaped directional conflict'; 
+'Figure 6J, K.  L-shaped directional conflict';
+'Figure 6L, M. Directional conflict for vertical domain';
+'Figure 6N, O. Directional conflict for upper half of vertical domain';
+'Figure 6P, Q. Orthogonal directional conflict in a parallel polarity field';
+'Figure 6R, S Orthogonal areal conflict';
+'Figure 6T, U. Orthogonal directional conflict in an orthogonal polarity field';
+'Figure 6_supplement 1A, B.  Combining directional and areal conflicts';
+'Figure 6_supplement 1C.  Combining surface and directional conflicts';
+'Figure 6_supplement 1D.  Combining surface and areal conflicts';    
+'Figure 7A, B.  Surface conflict without overall growth';
+'Figure 7C, D.  Areal conflict without overall growth';    
+'Figure 7E, F. Convergent directional conflict without overall growth';    
+'Figure 7G, H.  Orthogonal directional conflict in a parallel polarity field without overall growth';  
+
+
+Project: 'GPT_Wedges_20161213' contains models:
+
+'Figure 9 A-F. Phase I + II of div domes'; 
+'Figure 9J. No orthogonal conflict'; 
+'Figure 9I. No directional conflict and specified anisotropy';
+'Figure 9G. No surface conflict'; 
+'Figure 9H. No areal conflict'; 
+'Figure 10A-F.   Phase I + II of wild-type wedge'; 
+'Figure 10I. No directional conflict'; 
+'Figure 10J. No orthogonal directional conflict'; 
+'Figure 10G. No surface conflict'; 
+'Figure 10H. No areal conflict'; 
+
+
+Project: 'GPT_Full_Snapdragon_20161213' contains models:
+
+'Figure 9_Supplement 1A. Ground state'; 
+'Figure 9K.  div mutant'; 
+'Figure 10K Wild type corolla'; 

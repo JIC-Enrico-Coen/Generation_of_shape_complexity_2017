@@ -1,0 +1,495 @@
+
+% In this section you may modify the mesh in any way that does not
+% alter the set of nodes.
+
+
+if (Steps(m)==0) && m.globalDynamicProps.doinit  % Initialisation code.
+    
+    %check to see if we need a non bowlz canvas
+    switch modelname        
+        case{'Figure 1 Sup 1 A, B. Areal conflict flat start' , 'Figure 1 Sup 1 C, D. Convergent directional conflict flat start' }
+            %set the canvas to be flat
+            m = leaf_setzeroz( m );
+            m = leaf_perturbz( m, 0.01, 'absolute', false ); 
+    end
+    
+    %set up initial morphogens
+    switch modelname
+                
+        case {'Figure 1G, H. Areal conflict', 'Figure 1 Sup 1 A, B. Areal conflict flat start', 'dome1.1_areal conflict and contraction', 'dome7_surface conflict + areal conflict'}
+            
+            rsq = sum( m.nodes.^2, 2 ); % Calculates the square of the radius of every vertex
+            
+            %id_centre
+            id_centre_p (:) = 0;
+            id_centre_p =exp( -rsq/0.3.^2 );
+            
+            %id_edge
+            id_edge_p (:) = 0;
+            id_edge_p = 1-id_centre_p; % find the vetex at the edge of the canvas with the max radius values
+            
+        case {'Figure 1I, J. Convergent directional conflict', 'Figure 1 Sup 1 C, D. Convergent directional conflict flat start', 'dome3.1_anisotropic conflict with polarity convergence and contraction', ...
+                'Figure 6F, G. Orthogonal directional conflict','dome3.3_anisotropic conflict with polarity convergence + criss',...
+                'Figure 6H, I.  T-shaped directional conflict', 'dome3.5_anisotropic conflict with polarity convergence + L criss-cross',...
+                'dome3.6_anisotropic conflict with polarity convergence + one arm', 'dome8_surface conflict + orthogonal conflict'}
+            
+            %PRN - Setting convergence polarity field at the centre of the canvas
+            rsq = sum( m.nodes.^2, 2 ); % Calculates the square of the radius of every vertex
+            id_edge_p = rsq/max(rsq); % find the vertex at the edge of the canvas with the max radius values
+            P(id_edge_p>0.4)=1; %production of polariser at the edge of canvas
+            P(id_foci_p==1)=0.1; %degradation of polariser at the centre of the canvas
+            m.morphogenclamp((id_foci_p==1)|(id_edge_p==1),polariser_i) = 1;%stable polariser gradient by clamping the production and degradation of the polariser
+            m = leaf_mgen_conductivity( m, 'POLARISER', 0.0005 );  %specifies the diffusion rate of polariser
+            m = leaf_mgen_absorption( m, 'POLARISER', 0.005 ); % specifies degradation rate of polariser
+            
+            %GRN - Setting the identity and signalling factors that control the growth rates
+            %ID_RIM
+            id_rim_p (:) = 0;
+            id_rim_p(m.nodes(:,2) < 0.01 & m.nodes(:,2) > - 0.01) = 1;
+            
+            %ID_JUNCTION
+            id_junction_p (:) = 0;
+            id_junction_p(m.nodes(:,1) < 0.01 & m.nodes(:,1) > - 0.01) = 1;
+            
+            %id_foci
+            id_foci_p (:) = 0;
+            id_foci_p = id_rim_p .* id_junction_p;
+            
+            %S_RIM
+            s_rim_p(:) = 0;
+            s_rim_p(:) = 5*id_rim_p;
+            m = leaf_mgen_conductivity( m, 'S_RIM', 0.001 );
+            m = leaf_mgen_absorption( m, 'S_RIM', 0.01 );
+            
+            %S_JUN
+            s_jun_p(:) = 0;
+            s_jun_p(:) = 5*id_junction_p;
+            m = leaf_mgen_conductivity( m, 'S_JUN', 0.001 );
+            m = leaf_mgen_absorption( m, 'S_JUN', 0.01 );
+            
+            %S_FOCI
+            s_foci_p (:) = 0;
+            s_foci_p (:) = 10*id_foci_p;
+            m = leaf_mgen_conductivity( m, 'S_FOCI', 0.0005);
+            m = leaf_mgen_absorption( m, 'S_FOCI', 0.005);
+            
+            rsq = sum( m.nodes.^2, 2 ); % Calculates the square of the radius of every vertex
+            %id_centre
+            id_centre_p (:) = 0;
+            id_centre_p =exp( -rsq/0.3.^2 );
+            
+            %id_halfside
+            id_halfside_p (:) = 0;
+            id_halfside_p(m.nodes(:,1) < 0) = 1;
+            
+            %id_distalhalf
+            id_distalhalf_p(:)=0;
+            id_distalhalf_p (m.nodes(:,2) > 0)=1;
+            
+            
+        case {'dome4_anisotropic conflict with proximodistal polarity + criss-cross', 'Figure 1C, D. Uniform anisotropic growth'...
+                'dome4.2_anisotropic conflict with proximodistal polarity + criss-cross contraction', 'dome6_orthogonal conflict + areal conflict'}
+            
+            %PRN - Setting convergence polarity field at the centre of the canvas
+            bottom = m.nodes(:,2) == min(m.nodes(:,2)); %find the bottom nodes
+            top = m.nodes(:,2)== max(m.nodes(:,2)); %find the top nodes
+            id_sink_p(top) = 1; %activate expression of sink at the top nodes
+            id_source_p(bottom) = 1;%activate expression of source at the bottom nodes
+            P(bottom) = 1;%source of polariser at the bottom of canvas
+            P(top) = 0.01;%sink of polariser at the top of the canvas
+            m.morphogenclamp(bottom, polariser_i) = 1;%stable polariser gradient by clamping the production of the polariser
+            m.morphogenclamp(top, polariser_i) = 1;%stable polariser gradient by clamping the degradation of the polariser
+            m = leaf_mgen_conductivity( m, 'POLARISER', 0.01 );  %specifies the diffusion rate of polariser
+            m = leaf_mgen_absorption( m, 'POLARISER', 0.1 );     % specifies degradation rate of polariser
+            
+            %GRN - Setting the identity and signalling factors that control the growth rates
+            %ID_RIM
+            id_rim_p (:) = 0;
+            id_rim_p(m.nodes(:,2) < 0.01 & m.nodes(:,2) > - 0.01) = 1;
+            
+            %S_RIM
+            s_rim_p(:) = 0;
+            s_rim_p(:) = 5*id_rim_p;
+            m = leaf_mgen_conductivity( m, 'S_RIM', 0.001 );
+            m = leaf_mgen_absorption( m, 'S_RIM', 0.01 );
+            
+            %ID_JUNCTION
+            id_junction_p(m.nodes(:,1) < 0.01 & m.nodes(:,1) > - 0.01) = 1;
+            
+            %S_JUN
+            s_jun_p(:) = 0;
+            s_jun_p(:) = 5*id_junction_p;
+            m = leaf_mgen_conductivity( m, 'S_JUN', 0.001 );
+            m = leaf_mgen_absorption( m, 'S_JUN', 0.01 );
+            
+            
+        case {'dome4.1_areal conflict and criss-cross_no polariser'}
+            
+            %             %PRN - Setting convergence polarity field at the centre of the canvas
+            %             bottom = m.nodes(:,2) == min(m.nodes(:,2)); %find the bottom nodes
+            %             top = m.nodes(:,2)== max(m.nodes(:,2)); %find the top nodes
+            %             id_sink_p(top) = 1; %activate expression of sink at the top nodes
+            %             id_source_p(bottom) = 1;%activate expression of source at the bottom nodes
+            %             P(bottom) = 1;%production of polariser at the bottom of canvas
+            %             P(top) = 0.01;%degradation of polariser at the top of the canvas
+            %             m.morphogenclamp(bottom, polariser_i) = 1;%stable polariser gradient by clamping the production of the polariser
+            %             m.morphogenclamp(top, polariser_i) = 1;%stable polariser gradient by clamping the degradation of the polariser
+            %             m = leaf_mgen_conductivity( m, 'POLARISER', 0.01 );  %specifies the diffusion rate of polariser
+            %             m = leaf_mgen_absorption( m, 'POLARISER', 0.1 );     % specifies degradation rate of polariser
+            %
+            %GRN - Setting the identity and signalling factors that control the growth rates
+            %ID_RIM
+            id_rim_p (:) = 0;
+            id_rim_p(m.nodes(:,2) < 0.01 & m.nodes(:,2) > - 0.01) = 1;
+            
+            %S_RIM
+            s_rim_p(:) = 0;
+            s_rim_p(:) = 5*id_rim_p;
+            m = leaf_mgen_conductivity( m, 'S_RIM', 0.001 );
+            m = leaf_mgen_absorption( m, 'S_RIM', 0.01 );
+            
+            %ID_JUNCTION
+            id_junction_p(m.nodes(:,1) < 0.01 & m.nodes(:,1) > - 0.01) = 1;
+            
+            %S_JUN
+            s_jun_p(:) = 0;
+            s_jun_p(:) = 5*id_junction_p;
+            m = leaf_mgen_conductivity( m, 'S_JUN', 0.001 );
+            m = leaf_mgen_absorption( m, 'S_JUN', 0.01 );
+            
+            
+        case 'dome5_anisotropic conflict with channel confluence polarity + criss-cross'
+            
+            %PRN - Setting convergence polarity field at the centre of the canvas
+            %ID_TOP
+            id_top_p(m.nodes(:,2) > 0.45 ) = 1;
+            
+            %ID_SOURCE
+            id_source_p(m.nodes(:,2) < - 0.45)= 1;
+            
+            %ID_side
+            id_side_p(m.nodes(:,1) < - 0.45) =1;
+            id_side_p(m.nodes(:,1) > 0.45) = 1;
+            
+            %ID_JUNCTION
+            id_junction_p(m.nodes(:,1) < 0.01 & m.nodes(:,1) > - 0.01) = 1;
+            
+            %ID_SINK
+            id_sink_p (:) = 0;
+            id_sink_p = id_top_p .* id_junction_p;
+            
+            m = leaf_mgen_conductivity( m, 'POLARISER', 0.01 );  %specifies the diffusion rate of polariser
+            m = leaf_mgen_absorption( m, 'POLARISER', 0.1 );     % specifies degradation rate of polariser
+            P(:) = 0.1;%basal polariser production
+            P(id_source_p ==1) = 0.1;%production of polariser at the bottom of canvas
+            P(id_sink_p==1) = 0.01;%degradation of polariser at the centre of the top nodes of canvas
+            m.morphogenclamp((id_source_p==1), polariser_i) = 1;%stable polariser gradient by clamping the production of the polariser
+            m.morphogenclamp((id_sink_p==1), polariser_i) = 1;%stable polariser gradient by clamping the degradation of the polariser
+            
+            %GRN - Setting the identity and signalling factors that control the growth rates
+            %ID_RIM
+            id_rim_p (:) = 0;
+            id_rim_p(m.nodes(:,2) < 0.01 & m.nodes(:,2) > - 0.01) = 1;
+            
+            %S_RIM
+            s_rim_p(:) = 0;
+            s_rim_p(:) = 5*id_rim_p;
+            m = leaf_mgen_conductivity( m, 'S_RIM', 0.001 );
+            m = leaf_mgen_absorption( m, 'S_RIM', 0.01 );
+            
+            %S_JUN
+            s_jun_p(:) = 0;
+            s_jun_p(:) = 5*id_junction_p;
+            m = leaf_mgen_conductivity( m, 'S_JUN', 0.001 );
+            m = leaf_mgen_absorption( m, 'S_JUN', 0.01 );
+            
+            %S_SINK
+            s_sink_p(:) = 0;
+            s_sink_p(:) = 20*id_sink_p;
+            m = leaf_mgen_conductivity( m, 'S_SINK', 0.01 );
+            m = leaf_mgen_absorption( m, 'S_SINK', 0.1 );
+            
+            %id_foci
+            id_foci_p (:) = 0;
+            id_foci_p = id_rim_p .* id_junction_p;
+            
+            %S_FOCI
+            s_foci_p (:) = 0;
+            s_foci_p (:) = 10*id_foci_p;
+            m = leaf_mgen_conductivity( m, 'S_FOCI', 0.0005);
+            m = leaf_mgen_absorption( m, 'S_FOCI', 0.005);
+            
+            
+            
+    end
+    
+end
+if (Steps(m)==3) && m.globalDynamicProps.doinit  % Initialisation code.
+    
+    switch modelname
+        
+        case 'dome5_anisotropic conflict with channel confluence polarity + criss-cross'
+            
+            m = leaf_mgen_conductivity( m, 'POLARISER', 0.01 );  %specifies the diffusion rate of polariser
+            m = leaf_mgen_absorption( m, 'POLARISER', 0.1 );     % specifies degradation rate of polariser
+            
+            id_junction_p = s_jun_p;
+            %id_side_p = id_side_p .* inh (100, id_sink_p);
+            
+            m.morphogenclamp((id_source_p==1), polariser_i) = 0;%stable polariser gradient by clamping the production of the polariser
+            m.morphogenclamp((id_sink_p==1), polariser_i) = 0;%stable polariser gradient by clamping the degradation of the polariser
+            m.morphogenclamp((id_junction_p > 0.2), polariser_i) = 1;%stable polariser gradient by clamping the degradation of the polariser
+            P(id_side_p ==1) = 1;%production of polariser at the side of teh channel
+            m.morphogenclamp((id_side_p==1), polariser_i) = 1;%stable polariser gradient by clamping the production of the polariser
+            
+            %id_margins
+            id_margins_p (:) = 0;
+            id_margins_p = s_jun_p <0.18;
+            
+    end
+end
+
+if(Steps(m)==5)
+    %sets all diffusible factors to 0 freezing their gradients
+    m = leaf_mgen_conductivity( m, 'POLARISER', 0 );
+    m = leaf_mgen_absorption( m, 'POLARISER', 0 );
+    m = leaf_mgen_conductivity( m, 'S_JUN', 0 );
+    m = leaf_mgen_absorption( m, 'S_JUN', 0 );
+    m = leaf_mgen_conductivity( m, 'S_RIM', 0 );
+    m = leaf_mgen_absorption( m, 'S_RIM', 0 );
+    m = leaf_mgen_conductivity( m, 'S_FOCI', 0);
+    m = leaf_mgen_absorption( m, 'S_FOCI', 0);
+    
+end
+
+if(Steps(m)==6)
+    %add clones
+%     m = leaf_makesecondlayer( m, ...  % This function adds biological cells.
+%         'mode', 'each', ...  % Make biological celrea was 1/16000 of the initial area of the flower.
+%         'probpervx', 'V_FLOWER', ... % induce tranls randomly scattered over the flower.
+%         'relarea', 1/900, ...   % Each cell has asposed cells over whole corolla
+%         'numcells',500,...%number of cells (that will become clones)
+%         'sides', 16, ...  % Each cell is approximated as a 6-sided regular polygon.
+%         'colors', [0.5 0.5 0.5], ...  % Default colour is gray but
+%         'allowoverlap', false, ...
+%         'colorvariation',1,... % Each cell is a random colour
+%         'add', true );  % These cells are added to any cells existing already
+    m = leaf_plotoptions( m, 'cellbodyvalue', '' );
+end
+
+if (Steps(m)>6)
+    % Code for specific models.
+    
+    switch modelname
+        
+        case 'Figure 1A, B. Uniform isotropic growth'
+            kapar_p(:) = 0.03;
+            kaper_p(:) = 0.03;
+            kbpar_p(:) = kapar_p;
+            kbper_p(:) = kaper_p;
+            knor_p(:)  = 0.044;
+            
+            
+        case {'Figure 1G, H. Areal conflict', 'Figure 1 Sup 1 A, B. Areal conflict flat start'}
+            kbpar_p(:) = 0.05 + 0.05.*id_centre_p;%growth is boosted at the centre of the canvas
+            kbper_p(:) = 0.05 + 0.05.*id_centre_p;%growth is boosted at the centre of the canvas
+            kapar_p(:) = kbpar_p;
+            kaper_p(:) = kbper_p;
+            knor_p(:)  = 0.044;
+            v_karea_p = kapar_p +kaper_p;
+            v_kaniso_p =  log (kbpar_p./kbper_p);
+            
+            
+        case 'dome1.1_areal conflict and contraction'
+            kbpar_p(:) = 0.019 -0.032.*id_edge_p; %contraction at the edge of the canvas
+            kbper_p(:) = 0.019 -0.032.*id_edge_p; %contraction at the edge of the canvas
+            kapar_p(:) = kbpar_p;
+            kaper_p(:) = kbper_p;
+            knor_p(:)  = 0;
+            v_karea_p = kapar_p +kaper_p;
+            v_kaniso_p =  log (kbpar_p./kbper_p);
+            
+        case 'Figure 1E, F.  Surface conflict'
+            kbpar_p(:) = 0.05;
+            kbper_p(:) = 0.05;
+            kapar_p(:) = 0.06; %slightly more growth on the top surface
+            kaper_p(:) = 0.06; %slightly more growth on the top surface
+            knor_p(:)  = 0.044;
+            v_karea_p = kapar_p +kaper_p;
+            v_kareab_p = kbpar_p +kbper_p;
+            m = leaf_plotoptions( m, 'morphogenA', 'v_karea', 'morphogenB', 'v_kareab' );
+            v_kaniso_p =  log (kbpar_p./kbper_p);
+            
+        case 'dome2.1_surface conflict and contraction'
+            
+            kbpar_p(:) = -0.005;%contraction of the lower surface
+            kbper_p(:) = -0.005;%contraction of the lower surface
+            kapar_p(:) = 0.005;
+            kaper_p(:) = 0.005;
+            knor_p(:)  = 0;
+            v_karea_p = kapar_p +kaper_p;
+            v_kareab_p = kbpar_p +kbper_p;
+            m = leaf_plotoptions( m, 'morphogenA', 'v_karea', 'morphogenB', 'v_kareab' );
+            v_kaniso_p =  log (kbpar_p./kbper_p);
+            
+        case 'Figure 1C, D. Uniform anisotropic growth'
+            
+            kbpar_p(:) = 0.03;%growth is higher parallel to the polarity than perpendicular while also inhibited in Kpar at the center of the canvas where polarity converges
+            kbper_p(:) = 0.02;%growth is higher parallel to the polarity than perpendicular while also normalise for the foci Kpar inhibition by the promotion in Kper at the foci (in that way Karea is uniform)
+            kapar_p(:) = kbpar_p;
+            kaper_p(:) = kbper_p;
+            knor_p(:)  = 0.044;
+            v_karea_p = kapar_p +kaper_p;
+            v_kaniso_p =  log (kbpar_p./kbper_p);
+            
+        case {'Figure 1I, J. Convergent directional conflict', 'Figure 1 Sup 1 C, D. Convergent directional conflict flat start'}
+            
+            kbpar_p(:) = 0.05;%growth is higher parallel to the polarity than perpendicular while also inhibited in Kpar at the center of the canvas where polarity converges
+            kbper_p(:) = 0.02;%growth is higher parallel to the polarity than perpendicular while also normalise for the foci Kpar inhibition by the promotion in Kper at the foci (in that way Karea is uniform)
+            kapar_p(:) = kbpar_p;
+            kaper_p(:) = kbper_p;
+            knor_p(:)  = 0.044;
+            v_karea_p = kapar_p +kaper_p;
+            v_kaniso_p =  log (kbpar_p./kbper_p);
+            
+        case 'dome3.1_anisotropic conflict with polarity convergence and contraction'
+            
+            kbpar_p(:) = 0.01; % basal growth of canvas
+            kbper_p(:) = -0.01; % contraction perpendicular to the polartity
+            kapar_p(:) = kbpar_p;
+            kaper_p(:) = kbper_p;
+            knor_p(:)  = 0;
+            v_karea_p = kapar_p +kaper_p;
+            v_kaniso_p =  log (kbpar_p./kbper_p);
+            
+        case  'Figure 6F, G. Orthogonal directional conflict'
+            
+            kbpar_p(:) = 0.05 + 0.05*s_jun_p + 0.05*s_rim_p - 0.2*s_jun_p.*s_rim_p; %growth is boosted parallel to the polarity by sJUN and sRIM while also inhibited in Kpar at the center of the canvas where sJUN and sRIM intersect
+            kbper_p(:) = 0.05 -0.05*s_rim_p -0.05*s_jun_p + 0.2*s_jun_p.*s_rim_p; %normalisation of Kpar boost with inhibition in Kper at sJUN and sRIM while boosting at intersection (uniform Karea)
+            kapar_p(:) = kbpar_p;
+            kaper_p(:) = kbper_p;
+            knor_p(:)  = 0.044;
+            v_karea_p = kapar_p +kaper_p;
+            v_kaniso_p =  log (kbpar_p./kbper_p);
+            
+        case 'dome3.3_anisotropic conflict with polarity convergence + criss'
+            
+            kbpar_p(:) = 0.05 + 0.05*s_jun_p - 0.1*s_jun_p.*s_rim_p;%growth is boosted parallel to the polarity by sJUN while  inhibited in Kpar at the center of the canvas where sJUN and sRIM intersect
+            kbper_p(:) = 0.05 -0.05*s_jun_p + 0.1*s_jun_p.*s_rim_p;%normalisation of Kpar boost with inhibition in Kper at sJUN while boosting at intersection (uniform Karea)
+            kapar_p(:) = kbpar_p;
+            kaper_p(:) = kbper_p;
+            knor_p(:)  = 0.044;
+            v_karea_p = kapar_p +kaper_p;
+            v_kaniso_p =  log (kbpar_p./kbper_p);
+            
+        case  'Figure 6H, I.  T-shaped directional conflict'
+            
+            kbpar_p(:) = 0.05 + 0.05*s_jun_p + 0.05*s_rim_p.*id_halfside_p - 0.1*s_jun_p.*s_rim_p;%growth is boosted parallel to the polarity by sJUN and sRIM, only on the letside of canvas, while also inhibited in Kpar at the center of the canvas where sJUN and sRIM intersect
+            kbper_p(:) = 0.05 - 0.05*s_jun_p - 0.05*s_rim_p.*id_halfside_p + 0.1*s_jun_p.*s_rim_p;%normalisation of Kpar boost with inhibition in Kper while boosting at intersection (uniform Karea)             
+            kapar_p(:) = kbpar_p;
+            kaper_p(:) = kbper_p;
+            knor_p(:)  = 0.044;
+            v_karea_p = kapar_p +kaper_p;
+            v_kaniso_p =  log (kbpar_p./kbper_p);
+            
+        case  'dome3.5_anisotropic conflict with polarity convergence + L criss-cross'
+            
+            
+            kbpar_p(:) = 0.05 + 0.05*s_jun_p.*id_distalhalf_p + 0.05*s_rim_p.*id_halfside_p - 0.02*s_jun_p.*s_rim_p ;%growth is boosted parallel to the polarity by sJUN, only at the distalhalf of the canvas, and sRIM, only on the letside of canvas, while also inhibited in Kpar at the center of the canvas where sJUN and sRIM intersect
+            kbper_p(:) = 0.05 - 0.05*s_rim_p.*id_halfside_p -0.05*s_jun_p.*id_distalhalf_p + 0.02*s_jun_p.*s_rim_p;%normalisation of Kpar boost with inhibition in Kper while boosting at intersection (uniform Karea)
+            kapar_p(:) = kbpar_p;
+            kaper_p(:) = kbper_p;
+            knor_p(:)  = 0.044;
+            v_karea_p = kapar_p +kaper_p;
+            v_kaniso_p =  log (kbpar_p./kbper_p);
+            
+        case   'dome3.6_anisotropic conflict with polarity convergence + one arm'
+            
+            kbpar_p(:) = 0.05 + 0.05*s_jun_p.*id_distalhalf_p ;%growth is boosted parallel to the polarity by sJUN, only at the distalhalf of the canvas
+            kbper_p(:) = 0.05  -0.05*s_jun_p.*id_distalhalf_p;%normalisation of Kpar boost with inhibition in Kper (uniform Karea)
+            kapar_p(:) = kbpar_p;
+            kaper_p(:) = kbper_p;
+            knor_p(:)  = 0.044;
+            v_karea_p = kapar_p +kaper_p;
+            v_kaniso_p =  log (kbpar_p./kbper_p);
+            
+        case  {'dome4_anisotropic conflict with proximodistal polarity + criss-cross'}
+            
+            kbpar_p(:) = 0.05 + 0.05*s_jun_p -0.05*s_rim_p; %growth is boosted parallel to the polarity by sJUN while inhibited by sRIM
+            kbper_p(:) = 0.05 + 0.05*s_rim_p -0.05*s_jun_p;%growth is boosted perpendicular to the polarity by sRIM while inhibited by sJUN
+            kapar_p(:) = kbpar_p;
+            kaper_p(:) = kbper_p;
+            knor_p(:)  = 0.044;
+            v_karea_p = kapar_p +kaper_p;
+            v_kaniso_p =  log (kbpar_p./kbper_p);
+            
+        case {'dome4.1_areal conflict and criss-cross_no polariser'}
+            
+            kbpar_p(:) = 0.05 + 0.05*s_jun_p +0.05*s_rim_p - 0.2*s_jun_p.*s_rim_p; %growth is boosted parallel to the polarity by sJUN while inhibited by sRIM
+            kbper_p(:) = 0.05 + 0.05*s_rim_p +0.05*s_jun_p - 0.2*s_jun_p.*s_rim_p;%growth is boosted perpendicular to the polarity by sRIM while inhibited by sJUN
+            kapar_p(:) = kbpar_p;
+            kaper_p(:) = kbper_p;
+            knor_p(:)  = 0.044;
+            v_karea_p = kapar_p +kaper_p;
+            v_kaniso_p =  log (kbpar_p./kbper_p);
+            
+        case {'dome4.2_anisotropic conflict with proximodistal polarity + criss-cross contraction'}
+            
+            kbpar_p(:) = 0.05*s_jun_p -0.05*s_rim_p; %growth is boosted parallel to the polarity by sJUN while counterbalance by contraction in sRIM
+            kbper_p(:) = 0.05*s_rim_p -0.05*s_jun_p;%growth is boosted perpendicular to the polarity by sRIM while counterbalance by contraction in sJUN
+            kapar_p(:) = kbpar_p;
+            kaper_p(:) = kbper_p;
+            knor_p(:)  = 0;
+            v_karea_p = kapar_p +kaper_p;
+            v_kaniso_p =  log (kbpar_p./kbper_p);
+            
+        case 'dome5_anisotropic conflict with channel confluence polarity + criss-cross'
+            
+            kbpar_p(:) = 0.05 + 0.05*s_jun_p + 0.05*s_rim_p.*id_margins_p - 0.075*s_jun_p.*s_rim_p;%growth is boosted parallel to the polarity by sJUN and sRIM, only at the margins, while also inhibited in Kpar at the center of the canvas where sJUN and sRIM intersect
+            kbper_p(:) = 0.05 -0.05*s_rim_p.*id_margins_p -0.05*s_jun_p + 0.075*s_jun_p.*s_rim_p; %normalisation of Kpar boost with inhibition in Kper while boosting at intersection (uniform Karea)
+            kapar_p(:) = kbpar_p;
+            kaper_p(:) = kbper_p;
+            knor_p(:)  = 0.044;
+            v_karea_p = kapar_p +kaper_p;
+            v_kaniso_p =  log (kbpar_p./kbper_p);
+            
+        case  {'dome6_orthogonal conflict + areal conflict'}
+            
+            kbpar_p(:) = 0.01 + 0.06*s_jun_p - 0.12*s_jun_p.*s_rim_p; %growth is boosted parallel to the polarity by sJUN while inhibited by sRIM
+            kbper_p(:) = 0.01 + 0.06*s_rim_p - 0.12*s_jun_p.*s_rim_p;%growth is boosted perpendicular to the polarity by sRIM while inhibited by sJUN
+            kapar_p(:) = kbpar_p;
+            kaper_p(:) = kbper_p;
+            knor_p(:)  = 0.01;
+            v_karea_p = kapar_p +kaper_p;
+            v_kaniso_p =  log (kbpar_p./kbper_p);
+            
+        case  'dome7_surface conflict + areal conflict'
+            
+            kbpar_p(:) = 0.025 + 0.025.*id_centre_p;%growth is boosted at the centre of the canvas
+            kbper_p(:) = 0.025 + 0.025.*id_centre_p;%growth is boosted at the centre of the canvas
+            kapar_p(:) = 0.03 + 0.025.*id_centre_p;
+            kaper_p(:) = 0.03 + 0.05.*id_centre_p;
+            knor_p(:)  = 0.03;
+            v_karea_p = kapar_p +kaper_p;
+            v_kareab_p = kbpar_p +kbper_p;
+            m = leaf_plotoptions( m, 'morphogenA', 'v_karea', 'morphogenB', 'v_kareab' );
+            v_kaniso_p =  log (kbpar_p./kbper_p);
+            
+        case  'dome8_surface conflict + orthogonal conflict'
+            
+            kbpar_p(:) = 0.05 + 0.05*s_jun_p + 0.05*s_rim_p - 0.2*s_jun_p.*s_rim_p; %growth is boosted parallel to the polarity by sJUN and sRIM while also inhibited in Kpar at the center of the canvas where sJUN and sRIM intersect
+            kbper_p(:) = 0.05 -0.05*s_rim_p -0.05*s_jun_p + 0.2*s_jun_p.*s_rim_p; %normalisation of Kpar boost with inhibition in Kper at sJUN and sRIM while boosting at intersection (uniform Karea)
+            kapar_p(:) = 0.055 + 0.05*s_jun_p + 0.05*s_rim_p - 0.2*s_jun_p.*s_rim_p;
+            kaper_p(:) = 0.055 -0.05*s_rim_p -0.05*s_jun_p + 0.2*s_jun_p.*s_rim_p;
+            knor_p(:)  = 0.044;
+            v_karea_p = kapar_p +kaper_p;
+            v_kaniso_p =  log (kbpar_p./kbper_p);
+            v_karea_p = kapar_p +kaper_p;
+            v_kareab_p = kbpar_p +kbper_p;
+            m = leaf_plotoptions( m, 'morphogenA', 'v_karea', 'morphogenB', 'v_kareab' );
+            
+            
+        otherwise
+            % If this happens, maybe you forgot a model.
+    end
+end

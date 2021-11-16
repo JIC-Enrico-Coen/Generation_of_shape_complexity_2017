@@ -1,0 +1,77 @@
+
+m = leaf_setproperty( m, 'rectifyverticals', 1 );
+
+% set colour of polariser gradient arrows
+m=leaf_plotoptions(m,'highgradcolor',[0,0,0],'lowgradcolor',[0,0,0]);
+m=leaf_plotoptions(m,'decorscale',1.5);
+m=leaf_plotoptions(m,'arrowthickness',1.5);
+m=leaf_plotoptions(m,'sidegrad','AB'); %polariser gradient will be plotted on both sides
+
+if m.globalDynamicProps.currentIter==0 % the first iteration
+    % set up control of mesh thickness (override GUI)
+    % zero monitoring variables
+    m.userdata.areas = [];
+    m.userdata.times = [];
+    % clear the ranges fields and start again
+    m.userdata=rmfield(m.userdata,'ranges');
+    % Add the range fields
+    % The following range of mutants were used in Cui et al 2010
+    % in conjunction with the modelnumber range 'WILD'
+    m.userdata.ranges.mutantnumber.range(1)=0; % published Green et al model
+    m.userdata.ranges.mutantnumber.range(2)=1; % removed plt/lip growth as well as cenorg activity
+    m.userdata.ranges.mutantnumber.range(3)=2; % mutant of 'Fig 9B Model 7
+    m.userdata.ranges.mutantnumber.range(4)=3; % mutant of 'Fig 9B Model 7
+    m.userdata.ranges.mutantnumber.range(5)=4; % mutant of 'Fig 9B Model 7
+    m.userdata.ranges.mutantnumber.range(6)=5; % ?
+    m.userdata.ranges.mutantnumber.range(7)=6; % ?
+    m.userdata.ranges.mutantnumber.index=1; % default index selects just one of these modulation function options,
+    
+    % The following range of submodels were used in Green et al 2010
+    m.userdata.ranges.modelnumber.range{1}='Fig 9B Model 7'; % Main Snapdragon model as in Green et al paper
+    m.userdata.ranges.modelnumber.range{2}='Figure 9_Supplement 1A. Ground state'; % Stripping interactions that control the growth of the lower petals of published model to generate a ground state
+    m.userdata.ranges.modelnumber.range{3}='Figure 9K.  div mutant'; % Integration of orthogonal anisotropy conflict, surface conflict and areal conflict into ground state as in div wedge model
+    m.userdata.ranges.modelnumber.range{4}='div_mutant_no criss-cross'; % Removing the orthogonal anisotropy conflict from div model
+    m.userdata.ranges.modelnumber.range{5}='Figure 10K Wild type corolla'; % building on the div muatnt with an extended orthogonal anisotropy and modulating teh surface and areal conflicts
+    m.userdata.ranges.modelnumber.range{6}='cycdich mutant'; % activity of CYC and DICH to 0 in the wild-type model
+    m.userdata.ranges.modelnumber.range{7}='cycdichdiv mutant'; % activity of CYC, DICH and DIV to 0 in the wild-type model
+    m.userdata.ranges.modelnumber.range{8}='Wild-type model_no criss-cross'; % extended orthogonal anisotropy conflict mutant
+    m.userdata.ranges.modelnumber.range{9}='Wild-type model_no surface conflict'; %removing surface conflict from wild-type model
+    m.userdata.ranges.modelnumber.range{10}='Wild-type model_no areal conflict'; %removing areal conflict from wild-type model
+    m.userdata.ranges.modelnumber.range{11}='Wild-type model_no polarity deflection'; %removing the deflaction of plarity towards the ventral-lateral sinus from wild-type model
+    m.userdata.ranges.modelnumber.range{12}='Wild-type model_criss-cross at day 10'; %activating the extended orthogonal anisotropy at day 10 from wild-type model
+    
+    %****************************** CHANGE THIS INDEX ******************************
+    m.userdata.ranges.modelnumber.index=2; % selects one of these submodels,
+    % change, save, Restart and Stages: Recompute stages
+    %****************************** CHANGE THIS INDEX ******************************
+    
+    
+    modelnumber=m.userdata.ranges.modelnumber.range{m.userdata.ranges.modelnumber.index};
+    
+end
+m.globalProps.timestep=2.5; %FORCE dt (overriding GUI) since it is so easy to forget
+m = leaf_mgen_plotpriority( m, {'id_cenorg','v_cenorgp','v_cenorgn','id_distorg','id_proxorg'}, [10], [0.19 0.19 0.19 0.5 0.6] );
+modelnumber=m.userdata.ranges.modelnumber.range{m.userdata.ranges.modelnumber.index};
+
+disp(sprintf('/n>---------------- modelnumber=%s -----------------</n',modelnumber))
+mutantnumber=m.userdata.ranges.mutantnumber.range(m.userdata.ranges.mutantnumber.index);
+disp(sprintf('>>>mutantnumber=%d',mutantnumber));
+
+m = leaf_allowmutant( m, true );
+switch (modelnumber) % setup the default morphogen activities (0 means zero activity, i.e. mutant)
+    case {'Fig 9B Model 7', 'Figure 9_Supplement 1A. Ground state', 'Figure 10K Wild type corolla', 'Wild-type model_no criss-cross',...
+            'Wild-type model_no surface conflict', 'Wild-type model_no areal conflict', 'Wild-type model_no polarity deflection', 'Wild-type model_criss-cross at day 10'}
+        m=leaf_mgen_modulate(m,'morphogen', 'ID_CYC','mutant',        1);
+        m=leaf_mgen_modulate(m,'morphogen', 'ID_DICH','mutant',       1);
+        m=leaf_mgen_modulate(m,'morphogen', 'ID_DIV','mutant',        1);
+        m=leaf_mgen_modulate(m,'morphogen', 'ID_CENORG','mutant',     1);
+        m=leaf_mgen_modulate(m,'morphogen', 'V_DICHDISTORG','mutant',1);
+    case {'Figure 9K.  div mutant'}% single mutant
+        m=leaf_mgen_modulate(m,'morphogen', 'ID_CYC','mutant',        1);
+        m=leaf_mgen_modulate(m,'morphogen', 'ID_DICH','mutant',       1);
+        m=leaf_mgen_modulate(m,'morphogen', 'ID_DIV','mutant',        0);
+        m=leaf_mgen_modulate(m,'morphogen', 'ID_CENORG','mutant',     1);
+        m=leaf_mgen_modulate(m,'morphogen', 'V_DICHDISTORG','mutant',1);
+    otherwise
+        error('Selecting modelnumber')
+end
